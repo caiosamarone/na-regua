@@ -1,5 +1,7 @@
-/** @type {import('jest').Config} */
-const config = {
+import { defineConfig } from "jest";
+
+export default defineConfig({
+  verbose: true,
   clearMocks: true,
   collectCoverage: true,
   coverageDirectory: "coverage",
@@ -12,6 +14,4 @@ const config = {
     "^(\\.{1,2}/.*)\\.js$": "$1",
   },
   extensionsToTreatAsEsm: [".ts"],
-};
-
-export default config;
+});

@@ -1,4 +1,3 @@
-import { jest, describe, it, expect, beforeEach, afterEach } from "@jest/globals";
 import type { JwtService } from "../../../shared/services/jwt.service";
 import { InMemoryAuthRepository } from "../../../tests/helpers/in-memory-auth.repository";
 import { StaffLoginUseCase } from "./staff-login.use-case";
@@ -16,8 +15,8 @@ describe("StaffLoginUseCase", () => {
   beforeEach(() => {
     repository = new InMemoryAuthRepository();
     jwtService = {
-      signAccessToken: jest.fn<(...args: any[]) => any>().mockReturnValue("mock-access-token"),
-      verifyAccessToken: jest.fn<(...args: any[]) => any>(),
+      signAccessToken: jest.fn().mockReturnValue("mock-access-token"),
+      verifyAccessToken: jest.fn(),
     } as unknown as jest.Mocked<JwtService>;
     useCase = new StaffLoginUseCase(repository, jwtService);
   });
@@ -28,7 +27,7 @@ describe("StaffLoginUseCase", () => {
   });
 
   it("should login successfully with valid credentials", async () => {
-    (comparePasswords as jest.Mock<(...args: any[]) => any>).mockReturnValue(Promise.resolve(true));
+    (comparePasswords as unknown as jest.Mock).mockResolvedValue(true);
     repository.staff.push({
       id: "staff-1",
       barbershopId: "shop-1",
@@ -62,7 +61,7 @@ describe("StaffLoginUseCase", () => {
   });
 
   it("should throw UnauthorizedError when password is wrong", async () => {
-    (comparePasswords as jest.Mock<(...args: any[]) => any>).mockReturnValue(Promise.resolve(false));
+    (comparePasswords as unknown as jest.Mock).mockResolvedValue(false);
     repository.staff.push({
       id: "staff-2",
       barbershopId: "shop-1",

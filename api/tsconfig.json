@@ -12,8 +12,7 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "types": ["jest"]
+    "types": ["jest", "node"]
   },
-  "include": ["src/**/*", "*.ts", "prisma/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*", "*.ts", "prisma/**/*", "tests/**/*"]
 }

@@ -1,4 +1,3 @@
-import { jest, describe, it, expect, beforeEach, afterEach } from "@jest/globals";
 import { CustomerGoogleAuthUseCase } from "./customer-google-auth.use-case";
 import { InMemoryAuthRepository } from "../../../tests/helpers/in-memory-auth.repository";
 import type { GoogleAuthService } from "../../../shared/services/google.service";
@@ -13,13 +12,17 @@ describe("CustomerGoogleAuthUseCase", () => {
   beforeEach(() => {
     repository = new InMemoryAuthRepository();
     jwtService = {
-      signAccessToken: jest.fn<(...args: any[]) => any>().mockReturnValue("mock-access-token"),
-      verifyAccessToken: jest.fn<(...args: any[]) => any>(),
+      signAccessToken: jest.fn().mockReturnValue("mock-access-token"),
+      verifyAccessToken: jest.fn(),
     } as unknown as jest.Mocked<JwtService>;
     googleService = {
-      verifyIdToken: jest.fn<(...args: any[]) => any>(),
+      verifyIdToken: jest.fn(),
     } as unknown as jest.Mocked<GoogleAuthService>;
-    useCase = new CustomerGoogleAuthUseCase(repository, jwtService, googleService);
+    useCase = new CustomerGoogleAuthUseCase(
+      repository,
+      jwtService,
+      googleService,
+    );
   });
 
   afterEach(() => {
@@ -28,7 +31,7 @@ describe("CustomerGoogleAuthUseCase", () => {
   });
 
   it("should create a new customer when email does not exist", async () => {
-    googleService.verifyIdToken.mockResolvedValue({
+    (googleService.verifyIdToken as jest.Mock).mockResolvedValue({
       email: "new@test.com",
       name: "New User",
     });
@@ -47,7 +50,7 @@ describe("CustomerGoogleAuthUseCase", () => {
   });
 
   it("should return existing customer when email already exists", async () => {
-    googleService.verifyIdToken.mockResolvedValue({
+    (googleService.verifyIdToken as jest.Mock).mockResolvedValue({
       email: "existing@test.com",
       name: "Existing User",
     });
@@ -64,7 +67,7 @@ describe("CustomerGoogleAuthUseCase", () => {
   });
 
   it("should throw when Google token is invalid", async () => {
-    googleService.verifyIdToken.mockRejectedValue(
+    (googleService.verifyIdToken as jest.Mock).mockRejectedValue(
       new Error("Email não verificado"),
     );
 
