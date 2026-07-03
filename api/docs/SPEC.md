@@ -1,8 +1,13 @@
 # Na Régua — API Technical Specification
 
-> Gerada a partir das ADRs 001–012. Data: 2026-07-02.
+> Gerada a partir das ADRs 001–014. Revisão: 2026-07-02 (v2).
 > Esta SPEC é o guia de implementação para desenvolvedores.
 > Decisões de arquitetura detalhadas estão nas ADRs correspondentes.
+>
+> **Mudanças da v2:** entidades `OtpToken` e `InvitationToken`; endpoint de logout;
+> slot calculation com conversão de timezone explícita (ADR 010); fluxo de
+> confirmação em duas etapas para blocked dates; rejeição de cancel/done em
+> estados terminais; rate limit de OTP por IP; correções em rotas e query de geolocation.
 
 ---
 
@@ -10,29 +15,31 @@
 
 ### 1.1 Stack & Tecnologias
 
-| Camada | Tecnologia | Versão / Notas |
-|--------|-----------|----------------|
-| Runtime | Node.js + TypeScript | Strict mode |
-| Framework | Fastify | Plugins: @fastify/rate-limit, @fastify/cors, @fastify/multipart |
-| ORM | Prisma 6 | PostgreSQL provider |
-| Banco | PostgreSQL (Neon) | Extensions: cube, earthdistance, btree_gist |
-| Validação | Zod | Schemas em todos os endpoints |
-| Logger | Pino | Fastify built-in |
-| Email | Resend HTTP SDK | Templates em src/modules/templates/ |
-| Upload | Cloudinary Node.js SDK | Imagens: JPEG, PNG, WebP ≤ 5MB |
-| Geocoding | Nominatim (OSM) | Gratuito, sem API key |
-| Datetime | date-fns-tz ou luxon | Conversões UTC ↔ local |
+| Camada    | Tecnologia             | Versão / Notas                                                                |
+| --------- | ---------------------- | ----------------------------------------------------------------------------- |
+| Runtime   | Node.js + TypeScript   | Strict mode                                                                   |
+| Framework | Fastify                | Plugins: @fastify/rate-limit, @fastify/cors, @fastify/multipart, @fastify/jwt |
+| ORM       | Prisma 6               | PostgreSQL provider                                                           |
+| Banco     | PostgreSQL (Neon)      | Extensions: cube, earthdistance, btree_gist                                   |
+| Validação | Zod                    | Schemas em todos os endpoints                                                 |
+| Logger    | Pino                   | Fastify built-in (ADR 014)                                                    |
+| Email     | Resend HTTP SDK        | Templates em src/modules/templates/                                           |
+| Upload    | Cloudinary Node.js SDK | Imagens: JPEG, PNG, WebP ≤ 5MB                                                |
+| Geocoding | Nominatim (OSM)        | Gratuito, sem API key                                                         |
+| Datetime  | date-fns-tz ou luxon   | Conversões UTC ↔ local                                                        |
 
 ### 1.2 Convenções Gerais
 
 #### 1.2.1 Formato de Resposta (ADR 005)
 
 **Sucesso:**
+
 ```json
 { "data": { ... } }
 ```
 
 **Erro:**
+
 ```json
 {
   "error": "Human-readable message",
@@ -48,6 +55,7 @@
 - Refresh token: opaco (SHA-256 hash no BD), 7 dias, rotação com reuse detection
 - Staff JWT: `{ sub, role, barbershopId }` — `barbershopId` presente
 - Customer JWT: `{ sub, role: "CUSTOMER" }` — sem `barbershopId`
+- Logout revoga o refresh token atual (e a família); ver `POST /auth/logout`
 
 **Roles por ordem de privilégio:** `SUPER_ADMIN` > `BARBERSHOP_ADMIN` > `BARBER` > `CUSTOMER`
 
@@ -60,24 +68,29 @@
 
 #### 1.2.4 Timezone (ADR 010)
 
-| Tipo | Armazenamento | Exemplo |
-|------|--------------|---------|
-| Instantes absolutos | `timestamptz` UTC | `Appointment.startTime`, `cancelledAt` |
-| Horários operacionais | Wall-clock local (String `HH:mm`) | `OperatingHour.startTime = "09:00"` |
-| Fuso do barbershop | IANA (String) | `Barbershop.timezone = "America/Sao_Paulo"` |
+| Tipo                  | Armazenamento                     | Exemplo                                     |
+| --------------------- | --------------------------------- | ------------------------------------------- |
+| Instantes absolutos   | `timestamptz` UTC                 | `Appointment.startTime`, `cancelledAt`      |
+| Horários operacionais | Wall-clock local (String `HH:mm`) | `OperatingHour.startTime = "09:00"`         |
+| Fuso do barbershop    | IANA (String)                     | `Barbershop.timezone = "America/Sao_Paulo"` |
 
 - Conversões UTC ↔ local acontecem **sempre na API**
 - Frontend exibe em local time do barbershop, não faz math de timezone
 
 #### 1.2.5 Soft Delete (ADR 011)
 
-| Entidade | Flag | Pode desativar se houver future BOOKED? |
-|----------|------|----------------------------------------|
-| StaffMember | `isActive` | ❌ HTTP 409 com lista de appointments |
-| Service | `isActive` | ✅ A qualquer momento |
-| Barbershop | `active` | ✅ (Super Admin apenas) |
+| Entidade    | Flag       | Pode desativar se houver future BOOKED? |
+| ----------- | ---------- | --------------------------------------- |
+| StaffMember | `isActive` | ❌ HTTP 409 com lista de appointments   |
+| Service     | `isActive` | ✅ A qualquer momento                   |
+| Barbershop  | `active`   | ✅ (Super Admin apenas)                 |
 
 `isBookable` vs `isActive`: flags independentes. `isBookable=false` = indisponível para **novos** bookings, mantém appointments futuros.
+
+#### 1.2.6 Paginação
+
+- Listagens que podem crescer (`/customers/me/appointments`, `/barbershops/:id/appointments`) aceitam `?page` (default 1) e `?pageSize` (default 20, máx 100)
+- Response inclui meta: `{ "data": [...], "meta": { "page", "pageSize", "total" } }`
 
 ---
 
@@ -87,53 +100,85 @@
 
 #### StaffMember
 
-| Campo | Tipo | Notas |
-|-------|------|-------|
-| id | String (CUID) | PK |
-| barbershopId | String? | FK → Barbershop. Nullable para SUPER_ADMIN |
-| email | String | Unique |
-| passwordHash | String | bcrypt 10 rounds |
-| name | String | |
-| role | Enum | SUPER_ADMIN, BARBERSHOP_ADMIN, BARBER |
-| isBookable | Boolean | default: BARBER=true, BARBERSHOP_ADMIN=false |
-| isActive | Boolean | default true |
-| avatarUrl | String? | Cloudinary URL |
-| createdAt | DateTime | |
-| updatedAt | DateTime | |
+| Campo        | Tipo          | Notas                                        |
+| ------------ | ------------- | -------------------------------------------- |
+| id           | String (CUID) | PK                                           |
+| barbershopId | String?       | FK → Barbershop. Nullable para SUPER_ADMIN   |
+| email        | String        | Unique                                       |
+| passwordHash | String        | bcrypt 10 rounds                             |
+| name         | String        |                                              |
+| role         | Enum          | SUPER_ADMIN, BARBERSHOP_ADMIN, BARBER        |
+| isBookable   | Boolean       | default: BARBER=true, BARBERSHOP_ADMIN=false |
+| isActive     | Boolean       | default true                                 |
+| avatarUrl    | String?       | Cloudinary URL                               |
+| createdAt    | DateTime      |                                              |
+| updatedAt    | DateTime      |                                              |
 
 #### Customer
 
-| Campo | Tipo | Notas |
-|-------|------|-------|
-| id | String (CUID) | PK |
-| email | String | Unique — chave canônica cross-tenant |
-| name | String | |
-| googleId | String? | Unique. Só vincula se email do Google for **verified** |
-| avatarUrl | String? | Google profile photo |
-| createdAt | DateTime | |
-| updatedAt | DateTime | |
+| Campo     | Tipo          | Notas                                                  |
+| --------- | ------------- | ------------------------------------------------------ |
+| id        | String (CUID) | PK                                                     |
+| email     | String        | Unique — chave canônica cross-tenant                   |
+| name      | String        |                                                        |
+| googleId  | String?       | Unique. Só vincula se email do Google for **verified** |
+| avatarUrl | String?       | Google profile photo                                   |
+| createdAt | DateTime      |                                                        |
+| updatedAt | DateTime      |                                                        |
 
 #### RefreshToken
 
-| Campo | Tipo | Notas |
-|-------|------|-------|
-| id | String (CUID) | PK |
-| tokenHash | String | SHA-256 do token opaco |
-| staffMemberId | String? | FK → StaffMember |
-| customerId | String? | FK → Customer |
-| expiresAt | DateTime | 7 dias |
-| revoked | Boolean | default false |
-| family | String | Identificador para reuse detection |
+| Campo         | Tipo          | Notas                                        |
+| ------------- | ------------- | -------------------------------------------- |
+| id            | String (CUID) | PK                                           |
+| tokenHash     | String        | SHA-256 do token opaco                       |
+| staffMemberId | String?       | FK → StaffMember                             |
+| customerId    | String?       | FK → Customer                                |
+| family        | String        | Identificador da sessão para reuse detection |
+| expiresAt     | DateTime      | 7 dias                                       |
+| revoked       | Boolean       | default false                                |
+| createdAt     | DateTime      |                                              |
+
+- `family` é gerado (CUID) no **login/emissão inicial** e **herdado** em cada rotação
+- Exatamente um de `staffMemberId`/`customerId` é preenchido
 
 #### MagicLinkToken
 
-| Campo | Tipo | Notas |
-|-------|------|-------|
-| id | String (CUID) | PK |
-| tokenHash | String | SHA-256 |
-| customerId | String | FK → Customer |
-| expiresAt | DateTime | 15 minutos |
-| consumedAt | DateTime? | Null se ainda não consumido |
+| Campo      | Tipo          | Notas                       |
+| ---------- | ------------- | --------------------------- |
+| id         | String (CUID) | PK                          |
+| tokenHash  | String        | SHA-256                     |
+| customerId | String        | FK → Customer               |
+| expiresAt  | DateTime      | 15 minutos                  |
+| consumedAt | DateTime?     | Null se ainda não consumido |
+
+#### OtpToken (Password Reset)
+
+| Campo         | Tipo          | Notas                          |
+| ------------- | ------------- | ------------------------------ |
+| id            | String (CUID) | PK                             |
+| codeHash      | String        | SHA-256 do código de 6 dígitos |
+| staffMemberId | String?       | FK → StaffMember               |
+| customerId    | String?       | FK → Customer                  |
+| expiresAt     | DateTime      | 15 minutos                     |
+| consumedAt    | DateTime?     | Null se ainda não consumido    |
+| createdAt     | DateTime      |                                |
+
+- Reset serve para staff **e** customer — daí os dois FKs nullable (um preenchido)
+- Invalidado após uso (`consumedAt`) e por expiração
+
+#### InvitationToken
+
+| Campo        | Tipo          | Notas                      |
+| ------------ | ------------- | -------------------------- |
+| id           | String (CUID) | PK                         |
+| tokenHash    | String        | SHA-256 do token opaco     |
+| email        | String        | Email do convidado         |
+| barbershopId | String        | FK → Barbershop            |
+| role         | Enum          | BARBERSHOP_ADMIN ou BARBER |
+| expiresAt    | DateTime      | 72 horas                   |
+| consumedAt   | DateTime?     | Null se ainda não aceito   |
+| createdAt    | DateTime      |                            |
 
 ### 2.2 Fluxos
 
@@ -181,7 +226,19 @@ Response 200: { data: { accessToken, refreshToken } }
 
 - Valida hash no BD, verifica expiração e `revoked`
 - Se token já revogado → **reuse detection**: revoga toda a família (todos tokens com mesmo `family`)
-- Rotaciona: revoga atual + emite novo par
+- Rotaciona: revoga atual + emite novo par (mesma `family`)
+
+#### Logout
+
+```
+POST /auth/logout
+Body: { refreshToken: string }
+Auth: qualquer usuário autenticado
+Response 200: { data: { message: "Logged out" } }
+```
+
+- Revoga o refresh token apresentado; opcionalmente toda a `family` (logout de todos os dispositivos) via `?allDevices=true`
+- Access token permanece válido até expirar (máx 30min) — trade-off aceito para MVP
 
 #### Password Reset (OTP)
 
@@ -194,17 +251,19 @@ Response 200: { data: { message: "OTP sent if email exists" } }
 POST /auth/reset-password
 Body: { email, otp: string, newPassword: string }
 Response 200: { data: { message: "Password updated" } }
+Error 400: OTP_INVALID — código inválido, expirado ou já consumido
 ```
 
-- OTP: 6 dígitos criptograficamente aleatório, hash SHA-256, 15min expiry
+- OTP: 6 dígitos criptograficamente aleatório, hash SHA-256, 15min expiry, single-use
+- Aplica-se a staff e customer (resolve o email na tabela correspondente)
 - `newPassword` deve seguir política: 8+ chars, 1 uppercase, 1 símbolo
 
-#### Invite Flow (Barbershop Admin)
+#### Invite Flow (Barbershop Admin / Barber)
 
 ```
-// 1. Super Admin cria barbershop + envia invite
+// 1. Super Admin cria barbershop + envia invite ao admin
 POST /barbershops
-Body: { name, address, cep, adminEmail }
+Body: { name, address, cep, timezone, adminEmail }
 Auth: SUPER_ADMIN
 Response 201: { data: { barbershop, invitationSent: true } }
 
@@ -212,35 +271,39 @@ Response 201: { data: { barbershop, invitationSent: true } }
 POST /auth/accept-invite
 Body: { token, name, password }
 Response 200: { data: { accessToken, refreshToken } }
+Error 401: INVITATION_INVALID — token expirado ou já consumido
 ```
+
+- O mesmo fluxo de convite é reutilizado pelo Barbershop Admin ao adicionar um novo staff (ver módulo Staff)
 
 ### 2.3 Endpoints
 
-| Método | Rota | Auth | Descrição |
-|--------|------|------|-----------|
-| POST | `/auth/login` | No | Staff login |
-| POST | `/auth/refresh` | No | Refresh token rotation |
-| POST | `/auth/google` | No | Customer Google OAuth |
-| POST | `/auth/magic-link` | No | Envia magic link email |
-| POST | `/auth/magic-link/verify` | No | Consome magic link |
-| POST | `/auth/forgot-password` | No | Envia OTP |
-| POST | `/auth/reset-password` | No | Redefine senha com OTP |
-| POST | `/auth/accept-invite` | No | Aceita convite + define senha |
+| Método | Rota                      | Auth | Descrição                         |
+| ------ | ------------------------- | ---- | --------------------------------- |
+| POST   | `/auth/login`             | No   | Staff login                       |
+| POST   | `/auth/refresh`           | No   | Refresh token rotation            |
+| POST   | `/auth/logout`            | Yes  | Revoga refresh token (ou família) |
+| POST   | `/auth/google`            | No   | Customer Google OAuth             |
+| POST   | `/auth/magic-link`        | No   | Envia magic link email            |
+| POST   | `/auth/magic-link/verify` | No   | Consome magic link                |
+| POST   | `/auth/forgot-password`   | No   | Envia OTP                         |
+| POST   | `/auth/reset-password`    | No   | Redefine senha com OTP            |
+| POST   | `/auth/accept-invite`     | No   | Aceita convite + define senha     |
 
 ### 2.4 Role Matrix
 
-| Ação | SUPER_ADMIN | BARBERSHOP_ADMIN | BARBER | CUSTOMER |
-|------|-------------|------------------|--------|----------|
-| Criar/ativar/desativar barbershop | ✅ | ❌ | ❌ | ❌ |
-| Gerenciar staff/services/horários | ❌ | ✅ | ❌ | ❌ |
-| Toggle isBookable (qualquer staff) | ❌ | ✅ | ❌ | ❌ |
-| Ver métricas | ❌ | ✅ | ❌ | ❌ |
-| Ver agenda (todos staff) | ❌ | ✅ | ❌ | ❌ |
-| Ver própria agenda | ❌ | ✅ | ✅ | ❌ |
-| Marcar DONE | ❌ | ✅ | ✅ | ❌ |
-| Cancelar appointment (staff) | ❌ | ✅ | ✅ | ❌ |
-| Cancelar próprio appointment | ❌ | ❌ | ❌ | ✅ |
-| Bloquear datas | ❌ | ✅ | ❌ | ❌ |
+| Ação                               | SUPER_ADMIN | BARBERSHOP_ADMIN | BARBER | CUSTOMER |
+| ---------------------------------- | ----------- | ---------------- | ------ | -------- |
+| Criar/ativar/desativar barbershop  | ✅          | ❌               | ❌     | ❌       |
+| Gerenciar staff/services/horários  | ❌          | ✅               | ❌     | ❌       |
+| Toggle isBookable (qualquer staff) | ❌          | ✅               | ❌     | ❌       |
+| Ver métricas                       | ❌          | ✅               | ❌     | ❌       |
+| Ver agenda (todos staff)           | ❌          | ✅               | ❌     | ❌       |
+| Ver própria agenda                 | ❌          | ✅               | ✅     | ❌       |
+| Marcar DONE                        | ❌          | ✅               | ✅     | ❌       |
+| Cancelar appointment (staff)       | ❌          | ✅               | ✅     | ❌       |
+| Cancelar próprio appointment       | ❌          | ❌               | ❌     | ✅       |
+| Bloquear datas                     | ❌          | ✅               | ❌     | ❌       |
 
 ---
 
@@ -250,78 +313,78 @@ Response 200: { data: { accessToken, refreshToken } }
 
 #### Barbershop
 
-| Campo | Tipo | Notas |
-|-------|------|-------|
-| id | String (CUID) | PK |
-| name | String | |
-| slug | String | Unique, usado em URLs |
-| address | String | |
-| cep | String | |
-| neighborhood | String | |
-| city | String | |
-| state | String | |
-| latitude | Float? | Nullable — se geocoding falhar |
-| longitude | Float? | Nullable |
-| timezone | String | IANA, ex: "America/Sao_Paulo" |
-| phone | String? | |
-| logoUrl | String? | Cloudinary URL |
-| slotIntervalMinutes | Int | Default 30 |
-| cancellationLeadTimeMinutes | Int | Default 180 (3h) |
-| active | Boolean | Default false. Super Admin ativa |
-| createdAt | DateTime | |
-| updatedAt | DateTime | |
+| Campo                       | Tipo          | Notas                            |
+| --------------------------- | ------------- | -------------------------------- |
+| id                          | String (CUID) | PK                               |
+| name                        | String        |                                  |
+| slug                        | String        | Unique, usado em URLs            |
+| address                     | String        |                                  |
+| cep                         | String        |                                  |
+| neighborhood                | String        |                                  |
+| city                        | String        |                                  |
+| state                       | String        |                                  |
+| latitude                    | Float?        | Nullable — se geocoding falhar   |
+| longitude                   | Float?        | Nullable                         |
+| timezone                    | String        | IANA, ex: "America/Sao_Paulo"    |
+| phone                       | String?       |                                  |
+| logoUrl                     | String?       | Cloudinary URL                   |
+| slotIntervalMinutes         | Int           | Default 30                       |
+| cancellationLeadTimeMinutes | Int           | Default 180 (3h)                 |
+| active                      | Boolean       | Default false. Super Admin ativa |
+| createdAt                   | DateTime      |                                  |
+| updatedAt                   | DateTime      |                                  |
 
 #### OperatingHour
 
-| Campo | Tipo | Notas |
-|-------|------|-------|
-| id | String (CUID) | PK |
-| barbershopId | String | FK → Barbershop |
-| dayOfWeek | Int | 0=Dom, 1=Seg, ..., 6=Sáb |
-| startTime | String | "HH:mm" local |
-| endTime | String | "HH:mm" local |
+| Campo        | Tipo          | Notas                    |
+| ------------ | ------------- | ------------------------ |
+| id           | String (CUID) | PK                       |
+| barbershopId | String        | FK → Barbershop          |
+| dayOfWeek    | Int           | 0=Dom, 1=Seg, ..., 6=Sáb |
+| startTime    | String        | "HH:mm" local            |
+| endTime      | String        | "HH:mm" local            |
 
 Split shifts: um `dayOfWeek` pode ter múltiplos registros. Ex: (1, "09:00", "12:00") e (1, "13:00", "18:00").
 
 #### BlockedDate
 
-| Campo | Tipo | Notas |
-|-------|------|-------|
-| id | String (CUID) | PK |
-| barbershopId | String | FK → Barbershop |
-| startDate | DateTime | Whole-day, meia-noite local |
-| endDate | DateTime | Whole-day, meia-noite local |
-| reason | String? | Ex: "Reforma", "Feriado" |
+| Campo        | Tipo          | Notas                       |
+| ------------ | ------------- | --------------------------- |
+| id           | String (CUID) | PK                          |
+| barbershopId | String        | FK → Barbershop             |
+| startDate    | DateTime      | Whole-day, meia-noite local |
+| endDate      | DateTime      | Whole-day, meia-noite local |
+| reason       | String?       | Ex: "Reforma", "Feriado"    |
 
 ### 3.2 Endpoints
 
 #### Públicos (sem auth)
 
-| Método | Rota | Parâmetros | Descrição |
-|--------|------|-----------|-----------|
-| GET | `/barbershops/nearby` | `lat, lng, radius` (metros) | Proximity search via earthdistance |
-| GET | `/barbershops` | `?city=&neighborhood=&q=` | Text search fallback |
-| GET | `/barbershops/:id` | — | Perfil + horários + serviços + staff bookable |
-| GET | `/barbershops/:id/staff` | — | Lista staff com `isBookable=true` e `isActive=true` |
-| GET | `/barbershops/:id/services` | — | Lista serviços com `isActive=true` |
+| Método | Rota                              | Parâmetros                  | Descrição                                           |
+| ------ | --------------------------------- | --------------------------- | --------------------------------------------------- |
+| GET    | `/barbershops/nearby`             | `lat, lng, radius` (metros) | Proximity search via earthdistance                  |
+| GET    | `/barbershops`                    | `?city=&neighborhood=&q=`   | Text search fallback                                |
+| GET    | `/barbershops/:id`                | —                           | Perfil + horários + serviços + staff bookable       |
+| GET    | `/barbershops/:id/staff/bookable` | —                           | Lista staff com `isBookable=true` e `isActive=true` |
+| GET    | `/barbershops/:id/services`       | —                           | Lista serviços com `isActive=true`                  |
 
 #### Super Admin
 
-| Método | Rota | Auth | Descrição |
-|--------|------|------|-----------|
-| POST | `/barbershops` | SUPER_ADMIN | Criar + enviar invite admin |
-| PATCH | `/barbershops/:id/status` | SUPER_ADMIN | Ativar/desativar (`active`) |
+| Método | Rota                      | Auth        | Descrição                   |
+| ------ | ------------------------- | ----------- | --------------------------- |
+| POST   | `/barbershops`            | SUPER_ADMIN | Criar + enviar invite admin |
+| PATCH  | `/barbershops/:id/status` | SUPER_ADMIN | Ativar/desativar (`active`) |
 
 #### Barbershop Admin
 
-| Método | Rota | Auth | Descrição |
-|--------|------|------|-----------|
-| PATCH | `/barbershops/:id/profile` | BARBERSHOP_ADMIN | Editar nome, endereço, timezone, phone |
-| POST | `/barbershops/:id/logo` | BARBERSHOP_ADMIN | Upload logo (multipart) |
-| GET | `/barbershops/:id/operating-hours` | BARBERSHOP_ADMIN | Listar grade atual |
-| PUT | `/barbershops/:id/operating-hours` | BARBERSHOP_ADMIN | **Substituir** grade completa (array) |
-| POST | `/barbershops/:id/blocked-dates` | BARBERSHOP_ADMIN | Criar blocked date range |
-| DELETE | `/barbershops/:id/blocked-dates/:id` | BARBERSHOP_ADMIN | Remover blocked date |
+| Método | Rota                                            | Auth             | Descrição                                    |
+| ------ | ----------------------------------------------- | ---------------- | -------------------------------------------- |
+| PATCH  | `/barbershops/:id/profile`                      | BARBERSHOP_ADMIN | Editar nome, endereço, timezone, phone       |
+| POST   | `/barbershops/:id/logo`                         | BARBERSHOP_ADMIN | Upload logo (multipart)                      |
+| GET    | `/barbershops/:id/operating-hours`              | BARBERSHOP_ADMIN | Listar grade atual                           |
+| PUT    | `/barbershops/:id/operating-hours`              | BARBERSHOP_ADMIN | **Substituir** grade completa (array)        |
+| POST   | `/barbershops/:id/blocked-dates`                | BARBERSHOP_ADMIN | Criar blocked date range (preview + confirm) |
+| DELETE | `/barbershops/:id/blocked-dates/:blockedDateId` | BARBERSHOP_ADMIN | Remover blocked date                         |
 
 #### PUT /operating-hours — Regras
 
@@ -338,38 +401,62 @@ Split shifts: um `dayOfWeek` pode ter múltiplos registros. Ex: (1, "09:00", "12
 - Dias não enviados = fechado (sem OperatingHour para aquele dayOfWeek)
 - Validação Zod: `startTime` < `endTime`, formato `HH:mm`, intervalos não podem sobrepor no mesmo dia
 
-#### POST /blocked-dates — Regras
+#### POST /blocked-dates — Regras (fluxo em duas etapas)
 
-- Ao criar um bloqueio, a API **deve retornar** a lista de appointments `BOOKED` afetados:
+**Etapa 1 — Preview** (`confirm` ausente ou `false`): a API calcula e **retorna** os appointments `BOOKED` afetados, sem persistir nada.
+
 ```json
+// POST /barbershops/:id/blocked-dates?confirm=false
+// Body: { startDate, endDate, reason }
 {
   "data": {
-    "blockedDate": { ... },
+    "preview": true,
     "affectedAppointments": [
-      { "id": "...", "customerId": "...", "startTime": "...", "serviceName": "..." }
+      {
+        "id": "...",
+        "customerId": "...",
+        "startTime": "...",
+        "serviceName": "..."
+      }
     ]
   }
 }
 ```
 
-- O admin **confirma** o bloqueio para que os appointments sejam cancelados automaticamente com:
-  - `cancelledByRole = BARBERSHOP_ADMIN`
-  - `cancellationReason` = reason do block
+**Etapa 2 — Confirm** (`?confirm=true`): cria o `BlockedDate` e cancela os appointments afetados numa transação.
+
+```json
+// POST /barbershops/:id/blocked-dates?confirm=true
+{
+  "data": {
+    "blockedDate": {
+      "id": "...",
+      "startDate": "...",
+      "endDate": "...",
+      "reason": "..."
+    },
+    "cancelledCount": 3
+  }
+}
+```
+
+- Cada appointment cancelado recebe: `status=CANCELLED`, `cancelledByRole = BARBERSHOP_ADMIN`, `cancellationReason = reason`, `cancelledAt`
 - Email de cancelamento enviado para cada customer afetado
 
 ### 3.3 Geolocation (ADR 007)
 
 ```sql
 SELECT * FROM barbershops
-WHERE earth_box(ll_to_earth(:lat, :lng), :radius_meters) @> ll_to_earth(lat, lng)
-  AND earth_distance(ll_to_earth(:lat, :lng), ll_to_earth(lat, lng)) <= :radius_meters
+WHERE earth_box(ll_to_earth(:lat, :lng), :radius_meters) @> ll_to_earth(latitude, longitude)
+  AND earth_distance(ll_to_earth(:lat, :lng), ll_to_earth(latitude, longitude)) <= :radius_meters
   AND active = true
   AND latitude IS NOT NULL
+  AND longitude IS NOT NULL
 ```
 
-- Query executa via Prisma `$queryRawUnsafe` ou view materializada
+- Query executa via Prisma `$queryRawUnsafe` (parâmetros bindados)
 - Índice GiST: `CREATE INDEX idx_barbershop_location ON barbershops USING gist (ll_to_earth(latitude, longitude));`
-- Fallback text search: `WHERE city ILIKE :q OR neighborhood ILIKE :q AND active = true`
+- Fallback text search: `WHERE active = true AND (city ILIKE :q OR neighborhood ILIKE :q)`
 
 #### Geocoding na Criação
 
@@ -378,6 +465,7 @@ WHERE earth_box(ll_to_earth(:lat, :lng), :radius_meters) @> ll_to_earth(lat, lng
 - Se geocoding falhar → `latitude`/`longitude` = null → barbershop aparece apenas em text search
 - Admin pode corrigir endereço + re-geocodificar via `PATCH /barbershops/:id/profile`
 - Manual override: admin pode enviar `latitude`/`longitude` explicitamente
+- Respeitar usage policy / rate limit do Nominatim
 
 ---
 
@@ -389,19 +477,21 @@ StaffMember (mesma tabela do módulo Auth — vide seção 2.1)
 
 ### 4.2 Endpoints
 
-| Método | Rota | Auth | Descrição |
-|--------|------|------|-----------|
-| GET | `/barbershops/:id/staff` | BARBERSHOP_ADMIN | Listar todo staff do tenant |
-| GET | `/barbershops/:id/staff/bookable` | No | Listar apenas staff bookable (customer picker) |
-| POST | `/barbershops/:id/staff` | BARBERSHOP_ADMIN | Convidar novo staff (email + role) |
-| PATCH | `/staff/:id` | BARBERSHOP_ADMIN | Editar nome, role |
-| PATCH | `/staff/:id/bookable` | BARBERSHOP_ADMIN | Toggle isBookable |
-| DELETE | `/staff/:id` | BARBERSHOP_ADMIN | Soft-delete (isActive=false) |
-| POST | `/staff/:id/avatar` | BARBERSHOP_ADMIN | Upload avatar (multipart) |
+| Método | Rota                              | Auth             | Descrição                                      |
+| ------ | --------------------------------- | ---------------- | ---------------------------------------------- |
+| GET    | `/barbershops/:id/staff`          | BARBERSHOP_ADMIN | Listar todo staff do tenant                    |
+| GET    | `/barbershops/:id/staff/bookable` | No               | Listar apenas staff bookable (customer picker) |
+| POST   | `/barbershops/:id/staff`          | BARBERSHOP_ADMIN | Convidar novo staff (email + role)             |
+| PATCH  | `/staff/:id`                      | BARBERSHOP_ADMIN | Editar nome, role                              |
+| PATCH  | `/staff/:id/bookable`             | BARBERSHOP_ADMIN | Toggle isBookable                              |
+| DELETE | `/staff/:id`                      | BARBERSHOP_ADMIN | Soft-delete (isActive=false)                   |
+
+- `POST /staff` cria um `InvitationToken` e dispara email de convite (mesmo fluxo `accept-invite`)
 
 ### 4.3 Regras
 
 #### Bookable Staff Query (customer picker)
+
 ```sql
 WHERE role IN ('BARBER', 'BARBERSHOP_ADMIN')
   AND isBookable = true
@@ -410,27 +500,33 @@ WHERE role IN ('BARBER', 'BARBERSHOP_ADMIN')
 ```
 
 #### Toggle isBookable
+
 - `BARBER`: default `true` — admin pode desativar
 - `BARBERSHOP_ADMIN`: default `false` — admin pode ativar para si
 - `SUPER_ADMIN`: sempre `isBookable = false` (não é tenant-scoped)
+- Barbeiro **não** altera a própria flag; apenas o Barbershop Admin
 
 #### Soft-Delete (isActive = false)
+
 ```
 DELETE /staff/:id
 ```
 
 **Validação:**
+
 1. Buscar todos appointments com `status = BOOKED` e `startTime > now()` para este staff
 2. Se existir qualquer um → HTTP 409:
+
 ```json
 {
   "error": "Staff member has future appointments. Cancel or reassign them first.",
   "code": "STAFF_HAS_FUTURE_BOOKINGS",
   "details": {
-    "appointments": [ { "id": "...", "startTime": "...", "customerId": "..." } ]
+    "appointments": [{ "id": "...", "startTime": "...", "customerId": "..." }]
   }
 }
 ```
+
 3. Se não existirem → seta `isActive = false`
 
 ---
@@ -439,27 +535,27 @@ DELETE /staff/:id
 
 ### 5.1 Entidade
 
-| Campo | Tipo | Notas |
-|-------|------|-------|
-| id | String (CUID) | PK |
-| barbershopId | String | FK → Barbershop |
-| name | String | |
-| description | String? | |
-| durationMinutes | Int | Ex: 30, 45, 60 |
-| price | Decimal | BRL (R$) |
-| isActive | Boolean | Default true |
-| createdAt | DateTime | |
-| updatedAt | DateTime | |
+| Campo           | Tipo          | Notas           |
+| --------------- | ------------- | --------------- |
+| id              | String (CUID) | PK              |
+| barbershopId    | String        | FK → Barbershop |
+| name            | String        |                 |
+| description     | String?       |                 |
+| durationMinutes | Int           | Ex: 30, 45, 60  |
+| price           | Decimal       | BRL (R$)        |
+| isActive        | Boolean       | Default true    |
+| createdAt       | DateTime      |                 |
+| updatedAt       | DateTime      |                 |
 
 ### 5.2 Endpoints
 
-| Método | Rota | Auth | Descrição |
-|--------|------|------|-----------|
-| GET | `/barbershops/:id/services` | No | Lista serviços ativos |
-| GET | `/barbershops/:id/services?all=true` | BARBERSHOP_ADMIN | Lista todos (inclusive inativos) |
-| POST | `/barbershops/:id/services` | BARBERSHOP_ADMIN | Criar serviço |
-| PATCH | `/services/:id` | BARBERSHOP_ADMIN | Editar nome, duração, preço |
-| DELETE | `/services/:id` | BARBERSHOP_ADMIN | Soft-delete (isActive=false) |
+| Método | Rota                                 | Auth             | Descrição                        |
+| ------ | ------------------------------------ | ---------------- | -------------------------------- |
+| GET    | `/barbershops/:id/services`          | No               | Lista serviços ativos            |
+| GET    | `/barbershops/:id/services?all=true` | BARBERSHOP_ADMIN | Lista todos (inclusive inativos) |
+| POST   | `/barbershops/:id/services`          | BARBERSHOP_ADMIN | Criar serviço                    |
+| PATCH  | `/services/:id`                      | BARBERSHOP_ADMIN | Editar nome, duração, preço      |
+| DELETE | `/services/:id`                      | BARBERSHOP_ADMIN | Soft-delete (isActive=false)     |
 
 ### 5.3 Regras
 
@@ -475,47 +571,50 @@ DELETE /staff/:id
 
 #### Appointment
 
-| Campo | Tipo | Notas |
-|-------|------|-------|
-| id | String (CUID) | PK |
-| barbershopId | String | FK → Barbershop |
-| customerId | String | FK → Customer |
-| barberId | String | FK → StaffMember |
-| serviceName | String | Snapshot no momento do booking |
-| priceAtBooking | Decimal | Snapshot |
-| durationAtBooking | Int | Snapshot (minutos) |
-| startTime | DateTime (timestamptz) | UTC |
-| endTime | DateTime (timestamptz) | UTC (startTime + durationAtBooking) |
-| status | Enum | BOOKED, CANCELLED, DONE |
-| cancelledById | String? | FK → Customer ou StaffMember |
-| cancelledByRole | Enum? | CUSTOMER, BARBER, BARBERSHOP_ADMIN |
-| cancellationReason | String? | Free text |
-| cancelledAt | DateTime? | UTC |
-| createdAt | DateTime | |
-| updatedAt | DateTime | |
+| Campo              | Tipo                   | Notas                                            |
+| ------------------ | ---------------------- | ------------------------------------------------ |
+| id                 | String (CUID)          | PK                                               |
+| barbershopId       | String                 | FK → Barbershop                                  |
+| customerId         | String                 | FK → Customer                                    |
+| barberId           | String                 | FK → StaffMember                                 |
+| serviceId          | String                 | FK → Service (referência; valores usam snapshot) |
+| serviceName        | String                 | Snapshot no momento do booking                   |
+| priceAtBooking     | Decimal                | Snapshot                                         |
+| durationAtBooking  | Int                    | Snapshot (minutos)                               |
+| startTime          | DateTime (timestamptz) | UTC                                              |
+| endTime            | DateTime (timestamptz) | UTC (startTime + durationAtBooking)              |
+| status             | Enum                   | BOOKED, CANCELLED, DONE                          |
+| cancelledById      | String?                | FK → Customer ou StaffMember                     |
+| cancelledByRole    | Enum?                  | CUSTOMER, BARBER, BARBERSHOP_ADMIN               |
+| cancellationReason | String?                | Free text                                        |
+| cancelledAt        | DateTime?              | UTC                                              |
+| createdAt          | DateTime               |                                                  |
+| updatedAt          | DateTime               |                                                  |
 
 ### 6.2 Endpoints
 
 #### Customer
 
-| Método | Rota | Auth | Parâmetros | Descrição |
-|--------|------|------|-----------|-----------|
-| GET | `/barbershops/:id/slots` | No | `barberId`, `serviceId`, `date` | Slots disponíveis |
-| POST | `/appointments` | CUSTOMER | `barbershopId, barberId, serviceId, startTime` | Criar booking |
-| GET | `/customers/me/appointments` | CUSTOMER | `?status=&from=&to=` | Listar próprios appointments |
-| GET | `/customers/me/appointments/:id` | CUSTOMER | — | Detalhe appointment |
-| PATCH | `/appointments/:id/cancel` | CUSTOMER | `?reason=` | Cancelar próprio appointment |
+| Método | Rota                             | Auth     | Parâmetros                                     | Descrição                    |
+| ------ | -------------------------------- | -------- | ---------------------------------------------- | ---------------------------- |
+| GET    | `/barbershops/:id/slots`         | No       | `barberId`, `serviceId`, `date`                | Slots disponíveis            |
+| POST   | `/appointments`                  | CUSTOMER | `barbershopId, barberId, serviceId, startTime` | Criar booking                |
+| GET    | `/customers/me/appointments`     | CUSTOMER | `?status=&from=&to=&page=&pageSize=`           | Listar próprios appointments |
+| GET    | `/customers/me/appointments/:id` | CUSTOMER | —                                              | Detalhe appointment          |
+| PATCH  | `/appointments/:id/cancel`       | CUSTOMER | `?reason=`                                     | Cancelar próprio appointment |
 
 #### Staff
 
-| Método | Rota | Auth | Descrição |
-|--------|------|------|-----------|
-| GET | `/barbershops/:id/appointments` | BARBERSHOP_ADMIN, BARBER | Listar appointments (filtro: `?date=&barberId=&status=`) |
-| GET | `/barbershops/:id/appointments/:id` | BARBERSHOP_ADMIN, BARBER | Detalhe |
-| PATCH | `/appointments/:id/cancel` | BARBERSHOP_ADMIN, BARBER | Cancelar (staff) |
-| PATCH | `/appointments/:id/done` | BARBERSHOP_ADMIN, BARBER | Marcar como DONE |
+| Método | Rota                                | Auth                     | Descrição                                                        |
+| ------ | ----------------------------------- | ------------------------ | ---------------------------------------------------------------- |
+| GET    | `/barbershops/:id/appointments`     | BARBERSHOP_ADMIN, BARBER | Listar appointments (`?date=&barberId=&status=&page=&pageSize=`) |
+| GET    | `/barbershops/:id/appointments/:id` | BARBERSHOP_ADMIN, BARBER | Detalhe                                                          |
+| PATCH  | `/appointments/:id/cancel`          | BARBERSHOP_ADMIN, BARBER | Cancelar (staff)                                                 |
+| PATCH  | `/appointments/:id/done`            | BARBERSHOP_ADMIN, BARBER | Marcar como DONE                                                 |
 
-### 6.3 Slot Calculation — Algoritmo
+- Barber só enxerga/atua nos próprios appointments (`barberId = jwt.sub`); Admin vê todos do tenant
+
+### 6.3 Slot Calculation — Algoritmo (timezone-aware, ADR 010)
 
 ```
 GET /barbershops/:id/slots?barberId=x&serviceId=y&date=2026-07-03
@@ -523,52 +622,66 @@ GET /barbershops/:id/slots?barberId=x&serviceId=y&date=2026-07-03
 
 **Passo a passo:**
 
-1. **Buscar OperatingHours** do barbershop para o `dayOfWeek` da `date`
+1. Determinar o `dayOfWeek` da `date` **no timezone do barbershop**
 2. **Excluir BlockedDates** — se `date` cair em algum range bloqueado, retornar lista vazia
-3. **Buscar appointment duração** do serviço (`durationAtBooking` = `Service.durationMinutes`)
-4. **Buscar appointments BOOKED** do barber na `date` (filtrar por `startTime`/`endTime` no dia UTC)
-5. **Gerar grid de candidatos** a partir de cada operating interval:
-   - Step: `Barbershop.slotIntervalMinutes` (default 30)
-   - Exemplo: intervalo 09:00–12:00 → candidatos: 09:00, 09:30, 10:00, ..., 11:30
-6. **Validar cada candidato**: `[start, start + duration]` cabe **inteiramente dentro** de um operating interval?
-7. **Remover colisões**: candidato é removido se `[start, start + duration)` sobrepõe qualquer appointment BOOKED
-8. **Retornar** array de `{ startTime: string (ISO local), endTime: string (ISO local) }`
+3. Buscar `OperatingHours` do barbershop para esse `dayOfWeek` (wall-clock local)
+4. Buscar `Service.durationMinutes` (= `durationAtBooking`)
+5. Buscar appointments `BOOKED` do barber que intersectam o dia (comparação em UTC)
+6. Para cada operating interval, gerar candidatos em **local time** no step `slotIntervalMinutes`
+7. Converter cada candidato local → **UTC** usando `Barbershop.timezone` (respeitando DST)
+8. Validar: `[start, start+duration]` cabe inteiro no interval **e** não colide com nenhum BOOKED (comparação em UTC)
+9. Retornar slots com `startTime` em ISO local e o correspondente UTC
 
 ```typescript
-// Pseudo-código
-function calculateSlots(barbershop, barberId, serviceId, date): Slot[] {
-  const dayOfWeek = date.getDay()
-  const intervals = getOperatingHours(barbershop.id, dayOfWeek)
-  if (isBlocked(barbershop.id, date)) return []
+// Pseudo-código (usa date-fns-tz)
+import { zonedTimeToUtc } from "date-fns-tz";
 
-  const duration = getServiceDuration(serviceId) // ou durationAtBooking
-  const booked = getBookedAppointments(barberId, date) // BOOKED only
+function calculateSlots(barbershop, barberId, serviceId, dateStr): Slot[] {
+  const tz = barbershop.timezone;
+  const dayOfWeek = getLocalDayOfWeek(dateStr, tz);
+  if (isBlocked(barbershop.id, dateStr, tz)) return [];
 
-  const slots: Slot[] = []
+  const intervals = getOperatingHours(barbershop.id, dayOfWeek); // [{start:"09:00", end:"12:00"}, ...]
+  const duration = getServiceDuration(serviceId); // minutos
+  const booked = getBookedAppointments(barberId, dateStr, tz); // UTC [start,end]
+
+  const slots: Slot[] = [];
   for (const interval of intervals) {
-    for (let time = interval.start; time + duration <= interval.end; time += barbershop.slotIntervalMinutes) {
-      const slotEnd = time + duration
-      const hasConflict = booked.some(apt =>
-        (time < apt.endTime && slotEnd > apt.startTime)
-      )
-      if (!hasConflict) slots.push({ startTime: time, endTime: slotEnd })
+    const openMin = toMinutes(interval.start); // 540
+    const closeMin = toMinutes(interval.end); // 720
+    for (
+      let m = openMin;
+      m + duration <= closeMin;
+      m += barbershop.slotIntervalMinutes
+    ) {
+      const localStart = composeLocal(dateStr, m, tz); // wall-clock local
+      const startUtc = zonedTimeToUtc(localStart, tz); // UTC
+      const endUtc = addMinutes(startUtc, duration);
+      const hasConflict = booked.some(
+        (apt) => startUtc < apt.endTime && endUtc > apt.startTime,
+      );
+      if (!hasConflict) {
+        slots.push({
+          startTimeLocal: localStart,
+          startTimeUtc: startUtc,
+          endTimeUtc: endUtc,
+        });
+      }
     }
   }
-  return slots
+  return slots;
 }
 ```
 
-**Observações de timezone:**
-- `date` recebida como string ISO (ex: "2026-07-03") — interpretada no fuso do barbershop
-- Operating hours estão em wall-clock local
-- Candidatos são convertidos para UTC para comparação com appointments (que estão em timestamptz)
-- Slots retornados são convertidos de volta para local time do barbershop
+> **Importante:** nunca gerar/compararslots em "minutos ingênuos". A grade nasce em local time
+> e é convertida para UTC antes de qualquer comparação com `Appointment.startTime/endTime`.
 
 ### 6.4 Double-Booking Prevention
 
 **Duas camadas:**
 
 1. **App Layer** (transação Prisma):
+
 ```typescript
 await prisma.$transaction(async (tx) => {
   const conflict = await tx.appointment.findFirst({
@@ -585,6 +698,7 @@ await prisma.$transaction(async (tx) => {
 ```
 
 2. **DB Layer** (PostgreSQL exclusion constraint):
+
 ```sql
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
@@ -608,11 +722,20 @@ CANCELLED ───────→ (terminal)
 DONE ────────────→ (terminal)
 ```
 
+- Transições a partir de `CANCELLED`/`DONE` são rejeitadas (estados terminais)
+
 #### Regra DONE
+
 - `PATCH /appointments/:id/done` só pode ser chamado **após** `startTime` ter passado (comparação UTC)
 - Se tentar marcar DONE antes do horário → HTTP 400 `APPOINTMENT_NOT_YET_STARTED`
+- Se o appointment não estiver `BOOKED` → HTTP 409 `APPOINTMENT_NOT_ACTIONABLE`
 
 ### 6.6 Cancellation (ADR 008)
+
+#### Pré-condição (customer e staff)
+
+- Só é possível cancelar appointments em status `BOOKED`
+- Se já estiver `CANCELLED`/`DONE` → HTTP 409 `APPOINTMENT_NOT_ACTIONABLE`
 
 #### Customer Cancellation
 
@@ -620,10 +743,11 @@ DONE ────────────→ (terminal)
 PATCH /appointments/:id/cancel (CUSTOMER)
 ```
 
-1. Verificar se appointment pertence ao customer (JWT `sub`)
-2. Calcular lead time restante: `Appointment.startTime - now()`
+1. Verificar se appointment pertence ao customer (JWT `sub`) e está `BOOKED`
+2. Calcular lead time restante: `Appointment.startTime - now()` (UTC)
 3. Se `leadTimeRestante < Barbershop.cancellationLeadTimeMinutes`:
    - Response inclui aviso:
+
 ```json
 {
   "data": {
@@ -632,6 +756,7 @@ PATCH /appointments/:id/cancel (CUSTOMER)
   }
 }
 ```
+
 4. Se lead time ainda válido → cancelamento livre
 5. Atualizar: `status=CANCELLED`, `cancelledById`, `cancelledByRole=CUSTOMER`, `cancellationReason`, `cancelledAt`
 6. Enviar email de confirmação de cancelamento
@@ -643,10 +768,11 @@ PATCH /appointments/:id/cancel (BARBER | BARBERSHOP_ADMIN)
 ```
 
 - `cancelledByRole = staff.role`
-- Sem validação de lead time (staff pode cancelar qualquer appointment)
+- Sem validação de lead time (staff pode cancelar qualquer appointment BOOKED)
 - Enviar email para o customer
 
 #### Availability After Cancellation
+
 - Slot é imediatamente disponível para re-booking (sem cool-down)
 
 ---
@@ -655,15 +781,16 @@ PATCH /appointments/:id/cancel (BARBER | BARBERSHOP_ADMIN)
 
 ### 7.1 Endpoint
 
-| Método | Rota | Auth | Parâmetros | Descrição |
-|--------|------|------|-----------|-----------|
-| GET | `/barbershops/:id/metrics` | BARBERSHOP_ADMIN | `from` (ISO date), `to` (ISO date) | Métricas do período |
+| Método | Rota                       | Auth             | Parâmetros                         | Descrição           |
+| ------ | -------------------------- | ---------------- | ---------------------------------- | ------------------- |
+| GET    | `/barbershops/:id/metrics` | BARBERSHOP_ADMIN | `from` (ISO date), `to` (ISO date) | Métricas do período |
 
 ### 7.2 Agregações
 
 Todas as queries escopo `barbershopId` + range `[from, to]` em `startTime`.
 
 #### Total Revenue
+
 ```sql
 SELECT SUM("priceAtBooking")::decimal
 FROM "Appointment"
@@ -674,6 +801,7 @@ WHERE "barbershopId" = :id
 ```
 
 #### Top Services
+
 ```sql
 SELECT "serviceName",
        COUNT(*)::int as "bookingCount",
@@ -687,6 +815,7 @@ LIMIT 10
 ```
 
 #### Top Barbers
+
 ```sql
 SELECT "barberId",
        COUNT(*)::int as "appointmentCount",
@@ -699,7 +828,10 @@ ORDER BY "revenue" DESC
 LIMIT 10
 ```
 
+- Agrupa por **quem realizou** o atendimento (`barberId`), independente do role — um `BARBERSHOP_ADMIN` bookable aparece naturalmente; admin gestor sem appointments não aparece
+
 #### Busiest Days
+
 ```sql
 SELECT DATE("startTime") as "date",
        COUNT(*)::int as "appointmentCount"
@@ -712,6 +844,7 @@ LIMIT 10
 ```
 
 ### 7.3 Regras
+
 - **Apenas DONE** conta como receita. BOOKED e CANCELLED são excluídos.
 - Valores usam `priceAtBooking` (snapshot), não preço atual do serviço
 - Acesso exclusivo BARBERSHOP_ADMIN
@@ -729,20 +862,21 @@ Frontend (multipart/form-data) → API → valida tipo/tamanho → Cloudinary SD
 
 ### 8.2 Endpoints
 
-| Método | Rota | Auth | Descrição |
-|--------|------|------|-----------|
-| POST | `/upload/barbershop-logo` | BARBERSHOP_ADMIN | Upload logo da barbearia |
-| POST | `/upload/staff-avatar` | BARBERSHOP_ADMIN | Upload avatar de staff |
+| Método | Rota                      | Auth             | Descrição                |
+| ------ | ------------------------- | ---------------- | ------------------------ |
+| POST   | `/upload/barbershop-logo` | BARBERSHOP_ADMIN | Upload logo da barbearia |
+| POST   | `/upload/staff-avatar`    | BARBERSHOP_ADMIN | Upload avatar de staff   |
 
 ### 8.3 Validação
 
 ```typescript
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-const MAX_SIZE = 5 * 1024 * 1024 // 5MB
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
 // Validar antes de enviar ao Cloudinary
-if (!ALLOWED_TYPES.includes(file.mimetype)) throw new AppError(400, 'INVALID_FILE_TYPE')
-if (file.size > MAX_SIZE) throw new AppError(400, 'FILE_TOO_LARGE')
+if (!ALLOWED_TYPES.includes(file.mimetype))
+  throw new AppError(400, "INVALID_FILE_TYPE");
+if (file.size > MAX_SIZE) throw new AppError(400, "FILE_TOO_LARGE");
 ```
 
 ### 8.4 Cloudinary Config
@@ -758,29 +892,34 @@ if (file.size > MAX_SIZE) throw new AppError(400, 'FILE_TOO_LARGE')
 
 ### A. Error Codes
 
-| HTTP | Code | Quando |
-|------|------|--------|
-| 400 | `VALIDATION_ERROR` | Zod validation failure. `details` contém erros por campo |
-| 400 | `INVALID_FILE_TYPE` | Upload com tipo não permitido |
-| 400 | `FILE_TOO_LARGE` | Upload > 5MB |
-| 400 | `APPOINTMENT_NOT_YET_STARTED` | Tentativa de marcar DONE antes do startTime |
-| 401 | `UNAUTHORIZED` | Token ausente, inválido ou expirado |
-| 401 | `MAGIC_LINK_INVALID` | Token de magic link expirado ou já consumido |
-| 403 | `FORBIDDEN` | Token válido, mas role não tem permissão |
-| 404 | `NOT_FOUND` | Recurso não encontrado |
-| 409 | `APPOINTMENT_CONFLICT` | Double-booking detectado |
-| 409 | `EMAIL_ALREADY_EXISTS` | Email duplicado (staff ou customer) |
-| 409 | `STAFF_HAS_FUTURE_BOOKINGS` | Tentativa de desativar staff com appointments futuros |
-| 429 | `RATE_LIMIT_EXCEEDED` | Rate limit atingido |
+| HTTP | Code                          | Quando                                                   |
+| ---- | ----------------------------- | -------------------------------------------------------- |
+| 400  | `VALIDATION_ERROR`            | Zod validation failure. `details` contém erros por campo |
+| 400  | `INVALID_FILE_TYPE`           | Upload com tipo não permitido                            |
+| 400  | `FILE_TOO_LARGE`              | Upload > 5MB                                             |
+| 400  | `APPOINTMENT_NOT_YET_STARTED` | Tentativa de marcar DONE antes do startTime              |
+| 400  | `OTP_INVALID`                 | Código OTP inválido, expirado ou já consumido            |
+| 401  | `UNAUTHORIZED`                | Token ausente, inválido ou expirado                      |
+| 401  | `MAGIC_LINK_INVALID`          | Token de magic link expirado ou já consumido             |
+| 401  | `INVITATION_INVALID`          | Token de convite expirado ou já consumido                |
+| 403  | `FORBIDDEN`                   | Token válido, mas role não tem permissão                 |
+| 404  | `NOT_FOUND`                   | Recurso não encontrado                                   |
+| 409  | `APPOINTMENT_CONFLICT`        | Double-booking detectado                                 |
+| 409  | `APPOINTMENT_NOT_ACTIONABLE`  | Cancel/done em appointment não-BOOKED (estado terminal)  |
+| 409  | `EMAIL_ALREADY_EXISTS`        | Email duplicado (staff ou customer)                      |
+| 409  | `STAFF_HAS_FUTURE_BOOKINGS`   | Tentativa de desativar staff com appointments futuros    |
+| 429  | `RATE_LIMIT_EXCEEDED`         | Rate limit atingido                                      |
+| 500  | `INTERNAL_ERROR`              | Erro inesperado (mensagem suprimida em produção)         |
 
 ### B. Rate Limits (ADR 003)
 
-| Escopo | Limite | Janela |
-|--------|--------|--------|
-| Global (todos endpoints) | 100 req | 1 minuto |
-| Auth endpoints | 10 req | 1 minuto |
-| Auth por email | 3 req | 1 hora |
-| Appointment creation | 20 req | 1 minuto (autenticado) |
+| Escopo                                | Limite  | Janela                 |
+| ------------------------------------- | ------- | ---------------------- |
+| Global (todos endpoints)              | 100 req | 1 minuto               |
+| Auth endpoints                        | 10 req  | 1 minuto (por IP)      |
+| Auth por email (login/OTP/magic link) | 3 req   | 1 hora                 |
+| OTP por IP                            | 5 req   | 1 hora                 |
+| Appointment creation                  | 20 req  | 1 minuto (autenticado) |
 
 Configuração via `@fastify/rate-limit`.
 
@@ -792,10 +931,24 @@ CREATE EXTENSION IF NOT EXISTS earthdistance;
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 ```
 
-| Extension | Usada em |
-|-----------|----------|
-| `cube` | Dependência do `earthdistance` |
-| `earthdistance` | Proximity search (geolocation) |
-| `btree_gist` | Exclusion constraint (double-booking prevention) |
+| Extension       | Usada em                                         |
+| --------------- | ------------------------------------------------ |
+| `cube`          | Dependência do `earthdistance`                   |
+| `earthdistance` | Proximity search (geolocation)                   |
+| `btree_gist`    | Exclusion constraint (double-booking prevention) |
 
 Habilitar no Neon via dashboard SQL editor ou migration Prisma `CREATE EXTENSION`.
+
+### D. Variáveis de Ambiente
+
+| Variável               | Obrigatória | Notas                                        |
+| ---------------------- | ----------- | -------------------------------------------- |
+| `DATABASE_URL`         | Sim         | PostgreSQL (Neon)                            |
+| `JWT_SECRET`           | Sim         | HS256, mín 16 chars                          |
+| `CORS_ORIGIN`          | Sim         | Domínio do frontend (default localhost:3000) |
+| `PORT`                 | Não         | Default 3333                                 |
+| `NODE_ENV`             | Não         | development \| production \| test            |
+| `RESEND_API_KEY`       | Sim         | Envio de email transacional                  |
+| `GOOGLE_CLIENT_ID`     | Não\*       | \*Necessária para Google OAuth               |
+| `GOOGLE_CLIENT_SECRET` | Não\*       | \*Necessária para Google OAuth               |
+| `CLOUDINARY_URL`       | Sim         | Credenciais do Cloudinary                    |
