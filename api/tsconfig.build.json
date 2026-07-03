@@ -3,5 +3,5 @@
   "compilerOptions": {
     "types": ["node"]
   },
-  "exclude": ["tests/**/*", "**/*.spec.ts", "**/*.test.ts"]
+  "exclude": ["tests/**/*", "jest.config.ts", "**/*.spec.ts", "**/*.test.ts"]
 }
