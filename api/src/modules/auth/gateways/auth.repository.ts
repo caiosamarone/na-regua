@@ -17,6 +17,7 @@ export type CreateRefreshTokenInput = {
 
 export interface AuthRepository {
   findStaffByEmail(email: string): Promise<StaffMember | null>;
+  findStaffById(id: string): Promise<StaffMember | null>;
   findCustomerByEmail(email: string): Promise<Customer | null>;
   findCustomerById(id: string): Promise<Customer | null>;
   createRefreshToken(payload: CreateRefreshTokenInput): Promise<RefreshToken>;

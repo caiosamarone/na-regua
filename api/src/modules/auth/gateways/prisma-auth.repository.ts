@@ -13,6 +13,10 @@ export class PrismaAuthRepository implements AuthRepository {
     return prisma.staffMember.findUnique({ where: { email } });
   }
 
+  async findStaffById(id: string) {
+    return prisma.staffMember.findUnique({ where: { id } });
+  }
+
   async findCustomerByEmail(email: string) {
     return prisma.customer.findUnique({ where: { email } });
   }

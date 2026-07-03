@@ -120,7 +120,7 @@ USING gist (ll_to_earth(latitude, longitude));
 - [x] **1.4b** — `customer-google-auth.use-case.ts`
 - [x] **1.4c** — `send-magic-link.use-case.ts`
 - [x] **1.4d** — `verify-magic-link.use-case.ts`
-- [ ] **1.4e** — `refresh-token.use-case.ts`
+- [x] **1.4e** — `refresh-token.use-case.ts`
 - [x] **1.4f** — `logout.use-case.ts`
 - [ ] **1.4g** — `forgot-password.use-case.ts`
 - [ ] **1.4h** — `reset-password.use-case.ts`
@@ -132,7 +132,7 @@ USING gist (ll_to_earth(latitude, longitude));
 - [x] **1.5b** — `customer-google-auth.controller.ts` em `controllers/`
 - [x] **1.5c** — `send-magic-link.controller.ts`
 - [x] **1.5d** — `verify-magic-link.controller.ts`
-- [ ] **1.5e** — `refresh-token.controller.ts`
+- [x] **1.5e** — `refresh-token.controller.ts`
 - [x] **1.5f** — `logout.controller.ts`
 - [ ] **1.5g** — `forgot-password.controller.ts`
 - [ ] **1.5h** — `reset-password.controller.ts`
@@ -148,7 +148,7 @@ USING gist (ll_to_earth(latitude, longitude));
 - [x] Criar spec unitário `src/modules/auth/use-cases/customer-google-auth.use-case.spec.ts`
 - [x] Criar spec unitário `src/modules/auth/use-cases/send-magic-link.use-case.spec.ts`
 - [x] Criar spec unitário `src/modules/auth/use-cases/verify-magic-link.use-case.spec.ts`
-- [ ] Criar spec unitário `src/modules/auth/use-cases/refresh-token.use-case.spec.ts`
+- [x] Criar spec unitário `src/modules/auth/use-cases/refresh-token.use-case.spec.ts`
 - [x] Criar spec unitário `src/modules/auth/use-cases/logout.use-case.spec.ts`
 - [ ] Criar spec unitário `src/modules/auth/use-cases/forgot-password.use-case.spec.ts`
 - [ ] Criar spec unitário `src/modules/auth/use-cases/reset-password.use-case.spec.ts`

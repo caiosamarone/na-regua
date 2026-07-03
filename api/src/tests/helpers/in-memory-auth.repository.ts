@@ -47,6 +47,11 @@ export class InMemoryAuthRepository implements AuthRepository {
     return s ? (s as StaffMember) : null;
   }
 
+  async findStaffById(id: string) {
+    const s = this.staff.find((s) => (s as StaffMember).id === id);
+    return s ? (s as StaffMember) : null;
+  }
+
   async findCustomerByEmail(email: string) {
     return this.customers.find((c) => c.email === email) ?? null;
   }

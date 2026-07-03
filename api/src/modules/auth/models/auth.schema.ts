@@ -80,3 +80,10 @@ export const magicLinkResponseSchema = z.object({
 export const messageResponseSchema = z.object({
   data: z.object({ message: z.string() }),
 });
+
+export const refreshTokenResponseSchema = z.object({
+  data: z.object({
+    accessToken: z.string(),
+    refreshToken: z.string(),
+  }),
+});

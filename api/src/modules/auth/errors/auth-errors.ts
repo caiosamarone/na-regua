@@ -29,3 +29,9 @@ export class OtpInvalidError extends AppError {
     super(400, "OTP_INVALID", message);
   }
 }
+
+export class RefreshTokenInvalidError extends AppError {
+  constructor(message = "Refresh token inválido ou expirado") {
+    super(401, "REFRESH_TOKEN_INVALID", message);
+  }
+}
