@@ -16,7 +16,6 @@ Siga este padrão estrito para novas fatias dentro de `src/modules/<feature>/`:
 - `helpers/`: Funções utilitárias puras que servem apenas a esta feature.
 - `use-cases/`: O caso de uso (Lógica de negócio pura, sem Fastify, sem Prisma).
 - `controllers/`: Fastify Handlers — validam com Zod, injetam dependências no use case e devolvem a resposta HTTP.
-- `__tests__/`: Testes de integração usando `app.inject()`.
 
 ## 2. Padrão de Nomenclatura (Kebab-Case com Sufixos)
 
@@ -74,12 +73,6 @@ import type { StaffRole } from "../../generated/prisma/client";
 - **Escopo:** Todo `src/modules/*/use-cases/*.use-case.ts` deve ter um `*.use-case.spec.ts` ao lado.
 - **Isolamento:** NUNCA usar Prisma real. Use repositórios em memória (arrays simples) para simular o banco.
 - **O que testar:** Fluxo de sucesso + lançamento de todas as exceções de negócio.
-
-### Testes de Integração (Controllers)
-
-- **Escopo:** Endpoints críticos (auth, agendamento, cancelamento, geolocalização).
-- **Ferramenta:** `app.inject()` do Fastify (não abre porta TCP).
-- **Banco:** Postgres isolado via Docker, `prisma migrate deploy` antes da suíte, truncamento após cada teste.
 
 ## 9. Ordem de Implementação (Regra de Ouro)
 

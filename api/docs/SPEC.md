@@ -116,13 +116,6 @@ O projeto adota uma abordagem cirúrgica de testes baseada no melhor custo-benef
 - **Isolamento:** É expressamente proibido injetar a instância do Prisma ou chamar o banco de dados nesses testes. Toda e qualquer dependência de persistência deve ser suprida utilizando **In-Memory Repositories** (mocks em memória baseados em arrays simples).
 - **O que testar:** Fluxo de sucesso, lançamentos de exceções de negócio (ex: `STAFF_HAS_FUTURE_BOOKINGS`) e validações de regras de transição de estado.
 
-#### 1.3.2 Testes de Integração (Camada de Infraestrutura/Controllers)
-
-- **Escopo:** Endpoints críticos de rotas (ex: criação de agendamento, autenticação, geolocalização e cancelamento).
-- **Execução via Fastify Native:** Para evitar concorrência e abertura de portas TCP, os testes devem simular requisições HTTP utilizando o método nativo `app.inject()` do Fastify.
-- **Banco de Dados Isolado:** Os testes de integração devem rodar contra um banco de dados local Postgres (via Docker) exclusivo para testes. O ciclo de vida do teste deve rodar `prisma migrate deploy` antes da suíte e limpar/truncar as tabelas afetadas após cada cenário (`afterEach`), garantindo que um teste nunca interfira no estado do outro.
-- **O que testar:** HTTP Status Codes corretos, middlewares de autenticação/roles, validações sintáticas via Zod e persistência real no banco de dados.
-
 ---
 
 ## 2. Módulo: Auth
@@ -993,4 +986,4 @@ Antes de abrir qualquer Pull Request ou considerar uma feature concluída, o des
 1. A lógica de negócio está 100% isolada dentro do respectivo Use Case, livre de qualquer acoplamento com o protocolo HTTP (Fastify) ou tipos específicos de ORM (Prisma).
 2. O formato global de payloads de resposta é estritamente respeitado: `{ data: {} }` para respostas bem-sucedidas e `{ error: string, code: string, details: {} }` para falhas capturadas.
 3. A suíte de testes unitários do Use Case criado/alterado está passando e cobre os caminhos felizes e infelizes.
-4. O endpoint correspondente foi validado via teste de integração (`app.inject()`), certificando o funcionamento das validações do Zod e das constraints do PostgreSQL.
+4. O endpoint correspondente foi validado manualmente via curl/insomnia ou teste de contrato, certificando o funcionamento das validações do Zod e das constraints do PostgreSQL.

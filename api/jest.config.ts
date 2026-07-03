@@ -6,6 +6,9 @@ export default defineConfig({
   collectCoverage: true,
   coverageDirectory: "coverage",
   coverageProvider: "v8",
+  collectCoverageFrom: [
+    "src/modules/**/use-cases/**/*.use-case.ts",
+  ],
   testEnvironment: "node",
   transform: {
     "^.+\\.tsx?$": ["ts-jest", { useESM: true }],

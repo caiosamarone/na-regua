@@ -5,6 +5,7 @@ import jwt from "@fastify/jwt";
 import rateLimit from "@fastify/rate-limit";
 import { env } from "./config/env";
 import { prisma } from "./config/prisma";
+import { ZodError } from "zod";
 import { AppError } from "./shared/errors/app-error";
 import { authRoutes } from "./modules/auth/auth.routes";
 
@@ -30,6 +31,12 @@ app.setErrorHandler((error, request, reply) => {
     return reply
       .status(error.statusCode)
       .send({ error: error.message, code: error.code, details: error.details });
+  }
+
+  if (error instanceof ZodError) {
+    return reply
+      .status(400)
+      .send({ error: "Dados inválidos", code: "VALIDATION_ERROR", details: error.flatten().fieldErrors });
   }
 
   request.log.error(error);

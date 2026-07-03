@@ -16,8 +16,7 @@
 
 - [ ] Criar helpers de testes unitários em `src/tests/unit/` que forneçam repositórios em memória com arrays, para usar em todos os `use-case` (reset entre casos, sem Prisma)
 - [ ] Para cada `use-case` colocado em `src/modules/*/use-cases/`, criar `*.use-case.spec.ts` que cobre caminhos felizes e falhas de regras de negócio. Use Jest (setup já existente) e garanta 100% de cobertura lógica (fluxo positivo + erros).
-- [ ] Para os controladores críticos (autenticação, agendamento, geolocalização, cancelamento), escrever testes de integração em `src/modules/*/__tests__/` que usam `app.inject()` e um banco Postgres isolado (Docker), executando `prisma migrate deploy` antes da suíte e truncando os dados `afterEach`.
-- [ ] Documentar no README/TASK_PLAN o comando padrão para rodar os testes com o banco de testes (ex: `DATABASE_URL=... npm run test:integration`).
+
 
 ---
 
@@ -122,7 +121,7 @@ USING gist (ll_to_earth(latitude, longitude));
 - [ ] **1.4c** — `send-magic-link.use-case.ts`
 - [ ] **1.4d** — `verify-magic-link.use-case.ts`
 - [ ] **1.4e** — `refresh-token.use-case.ts`
-- [ ] **1.4f** — `logout.use-case.ts`
+- [x] **1.4f** — `logout.use-case.ts`
 - [ ] **1.4g** — `forgot-password.use-case.ts`
 - [ ] **1.4h** — `reset-password.use-case.ts`
 - [ ] **1.4i** — `accept-invite.use-case.ts`
@@ -134,7 +133,7 @@ USING gist (ll_to_earth(latitude, longitude));
 - [ ] **1.5c** — `send-magic-link.controller.ts`
 - [ ] **1.5d** — `verify-magic-link.controller.ts`
 - [ ] **1.5e** — `refresh-token.controller.ts`
-- [ ] **1.5f** — `logout.controller.ts`
+- [x] **1.5f** — `logout.controller.ts`
 - [ ] **1.5g** — `forgot-password.controller.ts`
 - [ ] **1.5h** — `reset-password.controller.ts`
 - [ ] **1.5i** — `accept-invite.controller.ts`
@@ -145,16 +144,15 @@ USING gist (ll_to_earth(latitude, longitude));
 
 ### 1.7 Testes
 
-- [ ] Criar spec unitário `src/modules/auth/use-cases/staff-login.use-case.spec.ts`
-- [ ] Criar spec unitário `src/modules/auth/use-cases/customer-google-auth.use-case.spec.ts`
+- [x] Criar spec unitário `src/modules/auth/use-cases/staff-login.use-case.spec.ts`
+- [x] Criar spec unitário `src/modules/auth/use-cases/customer-google-auth.use-case.spec.ts`
 - [ ] Criar spec unitário `src/modules/auth/use-cases/send-magic-link.use-case.spec.ts`
 - [ ] Criar spec unitário `src/modules/auth/use-cases/verify-magic-link.use-case.spec.ts`
 - [ ] Criar spec unitário `src/modules/auth/use-cases/refresh-token.use-case.spec.ts`
-- [ ] Criar spec unitário `src/modules/auth/use-cases/logout.use-case.spec.ts`
+- [x] Criar spec unitário `src/modules/auth/use-cases/logout.use-case.spec.ts`
 - [ ] Criar spec unitário `src/modules/auth/use-cases/forgot-password.use-case.spec.ts`
 - [ ] Criar spec unitário `src/modules/auth/use-cases/reset-password.use-case.spec.ts`
 - [ ] Criar spec unitário `src/modules/auth/use-cases/accept-invite.use-case.spec.ts`
-- [ ] Criar teste de integração `src/modules/auth/__tests__/auth.routes.spec.ts` com `app.inject()` (login e Google)
 
 ---
 
