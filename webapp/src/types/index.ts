@@ -5,6 +5,7 @@ export type StaffMember = {
   email: string;
   name: string;
   role: UserRole;
+  isBookable: boolean;
 };
 
 export type AuthResponse = {

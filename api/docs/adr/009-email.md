@@ -11,8 +11,9 @@ The system sends emails for: magic link, password reset OTP, barbershop admin in
 ## Decision
 
 ### Provider
-- **Resend** for MVP (transactional email API)
+- **Resend HTTP SDK** for MVP (transactional email API)
 - Dedicated `email.ts` service module wrapping Resend SDK
+- Environment variable: `RESEND_API_KEY` (not SMTP)
 
 ### Email Types
 | Type | Trigger | To |

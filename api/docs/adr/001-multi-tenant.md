@@ -25,7 +25,14 @@ Multiple barbershops (tenants), each with isolated data (staff, services, appoin
 - `Appointment` (via `barbershopId`)
 
 ### Cross-Tenant Tables
-- `Customer` (shared across tenants, identified by email/Google ID)
+- `Customer` (shared across tenants, identified canonically by **email**; Google OAuth links via verified email — see ADR 002)
+### Operating Hours Model
+- `OperatingHour` is barbershop-scoped with **split shifts**: `(barbershopId, dayOfWeek, startTime, endTime)` — a day may have multiple intervals (e.g. 09:00–12:00 and 13:00–18:00)
+- All barbers inherit the barbershop's operating hours in MVP (per-barber schedules are post-MVP)
+
+### Entity Lifecycle
+- Soft-delete via `isActive` for `StaffMember` and `Service` — see ADR 011
+
 
 ## Consequences
 - Simpler infrastructure for MVP

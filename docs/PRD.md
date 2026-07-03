@@ -12,8 +12,8 @@
 
 ### Super Admin
 - **Who:** App owner (singular — you)
-- **Goal:** Onboard barbershops, manage subscriptions manually, oversee the platform
-- **Access:** Full system access via email + password
+- **Goal**: Onboard barbershops and manage subscriptions (activate/deactivate)
+- **Access:** Email + password; creates barbershops and controls active status only — does not edit barbershops after creation
 
 ### Barbershop Admin
 - **Who:** Manager/owner of a barbershop tenant
@@ -43,12 +43,16 @@
 
 ### Barbershop Admin
 - As an admin, I want to manage services (name, duration, price, active/inactive)
-- As an admin, I want to manage barbers (add, remove, view schedule)
+- As an admin, I want to manage barbers (add, remove, toggle bookability, view schedule)
+- As an admin, I want to toggle staff bookability (available/unavailable for booking) for any team member
+
 - As an admin, I want to see all appointments and cancel them if needed
 - As an admin, I want to configure operating hours and exception days
 - As an admin, I want to view revenue and top services/barbers metrics
 - As an admin, I want to set the cancellation lead time for my barbershop
 - As an admin, I want to upload my barbershop logo
+- As an admin who also cuts hair, I want to mark myself as bookable so customers can schedule with me
+- As an admin, I want to block date ranges for my barbershop (e.g., holidays, renovation)
 
 ### Barber
 - As a barber, I want to see my daily/weekly schedule
@@ -58,7 +62,6 @@
 ### Super Admin
 - As a super admin, I want to create a barbershop tenant and invite the admin
 - As a super admin, I want to activate/deactivate barbershops (subscription control)
-- As a super admin, I want to block date ranges for a barbershop (e.g., renovation)
 
 ---
 
@@ -85,7 +88,7 @@
 | File upload | Cloudinary for barber photos and barbershop logo |
 | Transactional email | Resend (magic link, OTP, invitation, confirmation, cancellation) |
 | Password recovery | OTP-based reset (6-digit code, 15min expiry) |
-| Blocked dates | Super Admin blocks date ranges per barbershop |
+| Blocked dates | Barbershop Admin blocks date ranges (with confirmation for affected bookings) |
 
 ### Post-MVP (Not in Scope for Phase 1)
 
