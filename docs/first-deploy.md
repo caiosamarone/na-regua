@@ -4,6 +4,16 @@ Guia passo a passo para configurar o deploy inicial da API do Na Régua.
 
 ---
 
+## Ajustes recentes (antes do deploy)
+
+Antes de seguir o guia, as seguintes alterações já foram aplicadas no código:
+
+- **`prisma.config.ts`**: `import "dotenv/config"` removido — o Prisma CLI carrega `.env` automaticamente e em produção as env vars vêm da plataforma.
+- **`package.json`**: `start` alterado para `tsx src/server.ts` (roda direto, sem precisar de build). `tsx` movido para `dependencies` para ficar disponível em produção.
+- **`package.json`**: `build` agora executa `prisma generate && tsc` — o Build Command no Render fica simplificado para `npm install && npm run build`.
+
+---
+
 ## Sumário
 
 1. [Criar banco no Neon](#1-criar-banco-no-neon)
@@ -186,7 +196,7 @@ git push -u origin main
 | **Branch** | `main` |
 | **Root Directory** | Deixe vazio **se repo é só API**. Se monorepo, coloque `api` |
 | **Runtime** | `Node` |
-| **Build Command** | `npm install && npx prisma generate && npm run build` |
+| **Build Command** | `npm install && npm run build` (o build script já executa `prisma generate`) |
 | **Start Command** | `npm run start` |
 | **Plan** | `Free` |
 
@@ -235,7 +245,7 @@ services:
     env: node
     region: ohio
     plan: free
-    buildCommand: npm install && npx prisma generate && npm run build
+    buildCommand: npm install && npm run build
     startCommand: npm run start
     healthCheckPath: /
     envVars:
