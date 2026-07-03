@@ -6,6 +6,7 @@ import rateLimit from "@fastify/rate-limit";
 import { env } from "./config/env";
 import { prisma } from "./config/prisma";
 import { AppError } from "./shared/errors/app-error";
+import { authRoutes } from "./modules/auth/auth.routes";
 
 const app = Fastify({ logger: true });
 
@@ -21,6 +22,8 @@ app.register(rateLimit, {
   timeWindow: "1 minute",
   keyGenerator: (request) => request.ip,
 });
+
+app.register(authRoutes);
 
 app.setErrorHandler((error, request, reply) => {
   if (error instanceof AppError) {

@@ -5,6 +5,19 @@
 > **Arquitetura:** Vertical Slices (`src/modules/<feature>/`) com Ports & Adapters prático.
 >
 > **Convenção de nomes:** `kebab-case` com sufixos (`.schema.ts`, `.repository.ts`, `prisma-*.repository.ts`, `.use-case.ts`, `.controller.ts`, `.error.ts`, `.routes.ts`).
+>
+> **Import de tipos Prisma:** Sempre usar `src/generated/prisma/client`, nunca `@prisma/client`.
+
+---
+
+## Testes Automatizados (SPEC §1.3)
+
+> O projeto já tem o Jest configurado no `package.json` / `jest.config.ts`. Siga o "Modelo de Troféu" descrito na SPEC.
+
+- [ ] Criar helpers de testes unitários em `src/tests/unit/` que forneçam repositórios em memória com arrays, para usar em todos os `use-case` (reset entre casos, sem Prisma)
+- [ ] Para cada `use-case` colocado em `src/modules/*/use-cases/`, criar `*.use-case.spec.ts` que cobre caminhos felizes e falhas de regras de negócio. Use Jest (setup já existente) e garanta 100% de cobertura lógica (fluxo positivo + erros).
+- [ ] Para os controladores críticos (autenticação, agendamento, geolocalização, cancelamento), escrever testes de integração em `src/modules/*/__tests__/` que usam `app.inject()` e um banco Postgres isolado (Docker), executando `prisma migrate deploy` antes da suíte e truncando os dados `afterEach`.
+- [ ] Documentar no README/TASK_PLAN o comando padrão para rodar os testes com o banco de testes (ex: `DATABASE_URL=... npm run test:integration`).
 
 ---
 
@@ -91,32 +104,57 @@ USING gist (ll_to_earth(latitude, longitude));
 
 ### 1.1 Schemas de Validação
 
-- [ ] **1.1a** — Criar `src/modules/auth/models/auth.schema.ts`
+- [x] **1.1a** — Criar `src/modules/auth/models/auth.schema.ts`
 
 ### 1.2 Erros de Negócio
 
-- [ ] **1.2a** — Criar `src/modules/auth/errors/auth-errors.ts`
+- [x] **1.2a** — Criar `src/modules/auth/errors/auth-errors.ts`
 
 ### 1.3 Gateway (Port & Adapter)
 
-- [ ] **1.3a** — Criar interface `src/modules/auth/gateways/auth.repository.ts`
-- [ ] **1.3b** — Criar implementação `src/modules/auth/gateways/prisma-auth.repository.ts`
+- [x] **1.3a** — Criar interface `src/modules/auth/gateways/auth.repository.ts`
+- [x] **1.3b** — Criar implementação `src/modules/auth/gateways/prisma-auth.repository.ts`
 
-### 1.4 Use Cases e Controllers
+### 1.4 Use Cases
 
-- [ ] **1.4a** — `staff-login.use-case.ts` + controller
-- [ ] **1.4b** — `customer-google-auth.use-case.ts` + controller
-- [ ] **1.4c** — `send-magic-link.use-case.ts` + controller
-- [ ] **1.4d** — `verify-magic-link.use-case.ts` + controller
-- [ ] **1.4e** — `refresh-token.use-case.ts` + controller
-- [ ] **1.4f** — `logout.use-case.ts` + controller
-- [ ] **1.4g** — `forgot-password.use-case.ts` + controller
-- [ ] **1.4h** — `reset-password.use-case.ts` + controller
-- [ ] **1.4i** — `accept-invite.use-case.ts` + controller
+- [x] **1.4a** — `staff-login.use-case.ts`
+- [x] **1.4b** — `customer-google-auth.use-case.ts`
+- [ ] **1.4c** — `send-magic-link.use-case.ts`
+- [ ] **1.4d** — `verify-magic-link.use-case.ts`
+- [ ] **1.4e** — `refresh-token.use-case.ts`
+- [ ] **1.4f** — `logout.use-case.ts`
+- [ ] **1.4g** — `forgot-password.use-case.ts`
+- [ ] **1.4h** — `reset-password.use-case.ts`
+- [ ] **1.4i** — `accept-invite.use-case.ts`
 
-### 1.5 Route
+### 1.5 Controllers
 
-- [ ] **1.5a** — Criar `src/modules/auth/auth.routes.ts`
+- [x] **1.5a** — `staff-login.controller.ts` em `controllers/`
+- [x] **1.5b** — `customer-google-auth.controller.ts` em `controllers/`
+- [ ] **1.5c** — `send-magic-link.controller.ts`
+- [ ] **1.5d** — `verify-magic-link.controller.ts`
+- [ ] **1.5e** — `refresh-token.controller.ts`
+- [ ] **1.5f** — `logout.controller.ts`
+- [ ] **1.5g** — `forgot-password.controller.ts`
+- [ ] **1.5h** — `reset-password.controller.ts`
+- [ ] **1.5i** — `accept-invite.controller.ts`
+
+### 1.6 Route
+
+- [x] **1.6a** — Criar `src/modules/auth/auth.routes.ts`
+
+### 1.7 Testes
+
+- [ ] Criar spec unitário `src/modules/auth/use-cases/staff-login.use-case.spec.ts`
+- [ ] Criar spec unitário `src/modules/auth/use-cases/customer-google-auth.use-case.spec.ts`
+- [ ] Criar spec unitário `src/modules/auth/use-cases/send-magic-link.use-case.spec.ts`
+- [ ] Criar spec unitário `src/modules/auth/use-cases/verify-magic-link.use-case.spec.ts`
+- [ ] Criar spec unitário `src/modules/auth/use-cases/refresh-token.use-case.spec.ts`
+- [ ] Criar spec unitário `src/modules/auth/use-cases/logout.use-case.spec.ts`
+- [ ] Criar spec unitário `src/modules/auth/use-cases/forgot-password.use-case.spec.ts`
+- [ ] Criar spec unitário `src/modules/auth/use-cases/reset-password.use-case.spec.ts`
+- [ ] Criar spec unitário `src/modules/auth/use-cases/accept-invite.use-case.spec.ts`
+- [ ] Criar teste de integração `src/modules/auth/__tests__/auth.routes.spec.ts` com `app.inject()` (login e Google)
 
 ---
 
@@ -145,18 +183,13 @@ USING gist (ll_to_earth(latitude, longitude));
 
 ### 2.5 Use Cases e Controllers
 
-**Públicos (sem auth):**
 - [ ] **2.5a** — `get-nearby-barbershops.use-case.ts` + controller
 - [ ] **2.5b** — `search-barbershops.use-case.ts` + controller
 - [ ] **2.5c** — `get-barbershop-profile.use-case.ts` + controller
 - [ ] **2.5d** — `get-bookable-staff.use-case.ts` + controller
 - [ ] **2.5e** — `get-services.use-case.ts` + controller
-
-**Super Admin:**
 - [ ] **2.5f** — `create-barbershop.use-case.ts` + controller
 - [ ] **2.5g** — `update-barbershop-status.use-case.ts` + controller
-
-**Barbershop Admin:**
 - [ ] **2.5h** — `update-barbershop-profile.use-case.ts` + controller
 - [ ] **2.5i** — `replace-operating-hours.use-case.ts` + controller
 - [ ] **2.5j** — `preview-blocked-dates.use-case.ts` + controller
@@ -331,7 +364,7 @@ USING gist (ll_to_earth(latitude, longitude));
 | Fase | Status |
 |------|--------|
 | 0 — Fundação | 🟢 Completo |
-| 1 — Auth | 🔴 Não iniciado |
+| 1 — Auth | 🟡 Em andamento |
 | 2 — Barbershop | 🔴 Não iniciado |
 | 3 — Staff | 🔴 Não iniciado |
 | 4 — Service | 🔴 Não iniciado |

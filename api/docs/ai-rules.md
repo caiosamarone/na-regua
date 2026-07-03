@@ -8,13 +8,15 @@ O projeto é organizado por módulos e fatias verticais (features), e não por c
 
 ### Estrutura de Pastas de uma Feature:
 
-Siga este padrão estrito para novas fatias dentro de `src/features/<feature>/`:
+Siga este padrão estrito para novas fatias dentro de `src/modules/<feature>/`:
 
 - `models/`: Schemas Zod para validação de entrada/saída de dados.
 - `gateways/`: Contém a PORT (Interface do repositório) e o ADAPTER (Implementação concreta com Prisma).
 - `errors/`: Erros de negócio específicos herdados do `AppError` global.
 - `helpers/`: Funções utilitárias puras que servem apenas a esta feature.
-- `use-cases/`: O caso de uso (Lógica de negócio) e o Controller (Fastify Handler).
+- `use-cases/`: O caso de uso (Lógica de negócio pura, sem Fastify, sem Prisma).
+- `controllers/`: Fastify Handlers — validam com Zod, injetam dependências no use case e devolvem a resposta HTTP.
+- `__tests__/`: Testes de integração usando `app.inject()`.
 
 ## 2. Padrão de Nomenclatura (Kebab-Case com Sufixos)
 
@@ -24,7 +26,8 @@ O OpenCode e o sistema de arquivos devem seguir rigorosamente o padrão lowercas
 - **Gateway (Interface/Port):** `<nome-do-recurso>.repository.ts` (Ex: `appointment.repository.ts`)
 - **Gateway (Prisma/Adapter):** `prisma-<nome-do-recurso>.repository.ts` (Ex: `prisma-appointment.repository.ts`)
 - **Use Case (Ação):** `<acao-da-feature>.use-case.ts` (Ex: `create-appointment.use-case.ts`)
-- **Controller (HTTP Handler):** `<acao-da-feature>.controller.ts` (Ex: `create-appointment.controller.ts`)
+- **Controller (HTTP Handler):** `<acao-da-feature>.controller.ts` (Ex: `create-appointment.controller.ts`) dentro de `controllers/`
+- **Teste Unitário:** `<acao-da-feature>.use-case.spec.ts` (Ex: `staff-login.use-case.spec.ts`)
 - **Errors:** `<nome-do-erro>.error.ts` (Ex: `appointment-conflict.error.ts`)
 - **Helpers:** `<nome-da-funcao>.helper.ts` (Ex: `slot-math.helper.ts`)
 - **Routes (Plugin Fastify):** `<feature>.routes.ts` (Ex: `booking.routes.ts`)
@@ -34,30 +37,56 @@ O OpenCode e o sistema de arquivos devem seguir rigorosamente o padrão lowercas
 - **Sem Entidades puras:** Não crie classes de entidade isoladas do banco para evitar mapeamentos duplicados. Use os tipos gerados pelo Prisma Client como Modelos de Dados e o Zod para validação de integridade.
 - **Inversão de Dependência:** Use Cases NUNCA importam o Prisma diretamente. Eles dependem estritamente da interface do Gateway (Port). O Controller injeta o repositório concreto (Adapter) no Use Case.
 - **Fluxo de Dados:** O Controller valida os dados usando Zod, repassa para o Use Case e este aciona o Gateway.
+- **Controllers nunca devem ficar dentro de `use-cases/`.** Eles têm sua própria pasta `controllers/`.
 
-## 4. Padrão de Tratamento de Erros
+## 4. Importação de Tipos Prisma
 
-- **Erros Globais (`src/errors/`):** Contém a classe base `AppError` (que estende `Error` carregando `statusCode` e `code` em string).
+- **Sempre** importar tipos gerados do Prisma a partir de `src/generated/prisma/client`.
+- **Nunca** importar de `@prisma/client`. Exemplo correto:
+
+```typescript
+import type { StaffRole } from "../../generated/prisma/client";
+```
+
+## 5. Padrão de Tratamento de Erros
+
+- **Erros Globais (`src/shared/errors/`):** Contém a classe base `AppError` (que estende `Error` carregando `statusCode` e `code` em string).
 - **Erros por Feature (`src/modules/<feature>/errors/`):** Erros específicos de regras de negócio devem herdar de `AppError` (Ex: `class AppointmentConflictError extends AppError`). Os Casos de Uso devem lançar essas instâncias.
 
-## 5. Padrão de Helpers e Utilitários
+## 6. Padrão de Helpers e Utilitários
 
-- **Global (`src/helpers/`):** Apenas funções genéricas e puras sem regras do domínio do negócio (ex: gerador de SHA-256, formatador BRL).
+- **Global (`src/shared/helpers/`):** Apenas funções genéricas e puras sem regras do domínio do negócio (ex: gerador de SHA-256, formatador BRL).
 - **Local (`src/modules/<feature>/helpers/`):** Funções acessórias específicas da regra daquela fatia (ex: cálculos de fuso horário ou conversão de string de horas para minutos).
 
-## 6. Diretrizes de Código e Stack Técnica
+## 7. Diretrizes de Código e Stack Técnica
 
 - **Runtime:** Node.js + TypeScript em Strict Mode.
 - **Framework:** Fastify. Use plugins nativos e rotas encapsuladas por módulo.
 - **Banco de Dados:** PostgreSQL (Neon) via Prisma 6. Sempre use transações (`prisma.$transaction`) ao executar operações com validações dependentes (ex: soft-delete de staff ou double-booking).
 - **Fusos Horários:** Salve instantes absolutos em UTC (`timestamptz`). Agendas nascem em local time (`HH:mm`) do tenant, mas o cálculo de slots deve convertê-las para UTC antes de cruzar dados no banco.
 
-## 7. Regra de Ouro ao Desenvolver
+## 8. Testes Automatizados (Quality Gate)
 
-Antes de escrever qualquer código, certifique-se de que:
+**Todo caso de uso implementado DEVE ter seu respectivo teste unitário.** A implementação do use case e do teste são inseparáveis. Siga o "Modelo de Troféu" (SPEC §1.3):
 
-1. A lógica de negócio está isolada no Use Case, livre de acoplamento com o protocolo HTTP (Fastify) ou Infraestrutura do Prisma.
-2. Todas as ações de sucesso retornam o formato `{ data: { ... } }` e falhas retornam `{ error: string, code: string, details: {} }`.
-3. Cobertura de Testes Automatizados:
-   - Testes Unitários: Obrigatórios para todos os Casos de Uso (Use Cases), utilizando repositórios em memória (In-Memory Mocks) para garantir velocidade e isolamento.
-   - Testes de Integração: Obrigatórios para os Endpoints críticos dos Controllers (Fastify), utilizando o método `.inject()` e um banco de dados de testes isolado para validar rotas, esquemas de validação e persistência real.
+### Testes Unitários (Use Cases)
+
+- **Escopo:** Todo `src/modules/*/use-cases/*.use-case.ts` deve ter um `*.use-case.spec.ts` ao lado.
+- **Isolamento:** NUNCA usar Prisma real. Use repositórios em memória (arrays simples) para simular o banco.
+- **O que testar:** Fluxo de sucesso + lançamento de todas as exceções de negócio.
+
+### Testes de Integração (Controllers)
+
+- **Escopo:** Endpoints críticos (auth, agendamento, cancelamento, geolocalização).
+- **Ferramenta:** `app.inject()` do Fastify (não abre porta TCP).
+- **Banco:** Postgres isolado via Docker, `prisma migrate deploy` antes da suíte, truncamento após cada teste.
+
+## 9. Ordem de Implementação (Regra de Ouro)
+
+1. Schema Zod (`models/`)
+2. Erros de negócio (`errors/`)
+3. Interface do repositório + implementação Prisma (`gateways/`)
+4. **Use Case** (`use-cases/`) — lógica pura
+5. **Teste unitário do Use Case** (`use-cases/*.use-case.spec.ts`) — **obrigatório antes de passar para o controller**
+6. **Controller** (`controllers/`)
+7. **Registrar rota** (`*.routes.ts`)

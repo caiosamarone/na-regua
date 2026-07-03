@@ -92,6 +92,37 @@
 - Listagens que podem crescer (`/customers/me/appointments`, `/barbershops/:id/appointments`) aceitam `?page` (default 1) e `?pageSize` (default 20, máx 100)
 - Response inclui meta: `{ "data": [...], "meta": { "page", "pageSize", "total" } }`
 
+#### 1.2.7 Estrutura e imports
+
+- O código segue a arquitetura de **Vertical Slices**: cada módulo vive em `src/modules/<feature>/` com subpastas `models/`, `gateways/`, `helpers/`, `use-cases/`, `controllers/` e `routes/`.
+- Os **use cases** concentram toda lógica de negócio (sem dependências HTTP/Prisma) e os **controllers** (Fastify handlers) ficam dentro de `controllers/`, nunca junto dos use cases.
+- Sempre importa tipos gerados pelo Prisma a partir de `src/generated/prisma/client` (não usar `@prisma/client`).
+
+---
+
+### 1.3 Estratégia de Testes Automatizados
+
+O projeto adota uma abordagem cirúrgica de testes baseada no melhor custo-benefício de manutenção e confiança (Modelo de Troféu de Testes).
+
+┌──────────────────────────────────────────────┐
+│ Testes de Integração (E2E) │ ◄── Controllers (Fastify)
+├──────────────────────────────────────────────┤
+│ Testes Unitários de Negócio │ ◄── Use Cases (Lógica pura)
+└──────────────────────────────────────────────┘
+
+#### 1.3.1 Testes Unitários (Camada de Domínio/Use Cases)
+
+- **Escopo:** Todos os arquivos sob a pasta `src/modules/*/use-cases/` devem possuir 100% de cobertura de testes lógicos.
+- **Isolamento:** É expressamente proibido injetar a instância do Prisma ou chamar o banco de dados nesses testes. Toda e qualquer dependência de persistência deve ser suprida utilizando **In-Memory Repositories** (mocks em memória baseados em arrays simples).
+- **O que testar:** Fluxo de sucesso, lançamentos de exceções de negócio (ex: `STAFF_HAS_FUTURE_BOOKINGS`) e validações de regras de transição de estado.
+
+#### 1.3.2 Testes de Integração (Camada de Infraestrutura/Controllers)
+
+- **Escopo:** Endpoints críticos de rotas (ex: criação de agendamento, autenticação, geolocalização e cancelamento).
+- **Execução via Fastify Native:** Para evitar concorrência e abertura de portas TCP, os testes devem simular requisições HTTP utilizando o método nativo `app.inject()` do Fastify.
+- **Banco de Dados Isolado:** Os testes de integração devem rodar contra um banco de dados local Postgres (via Docker) exclusivo para testes. O ciclo de vida do teste deve rodar `prisma migrate deploy` antes da suíte e limpar/truncar as tabelas afetadas após cada cenário (`afterEach`), garantindo que um teste nunca interfira no estado do outro.
+- **O que testar:** HTTP Status Codes corretos, middlewares de autenticação/roles, validações sintáticas via Zod e persistência real no banco de dados.
+
 ---
 
 ## 2. Módulo: Auth
@@ -952,3 +983,14 @@ Habilitar no Neon via dashboard SQL editor ou migration Prisma `CREATE EXTENSION
 | `GOOGLE_CLIENT_ID`     | Não\*       | \*Necessária para Google OAuth               |
 | `GOOGLE_CLIENT_SECRET` | Não\*       | \*Necessária para Google OAuth               |
 | `CLOUDINARY_URL`       | Sim         | Credenciais do Cloudinary                    |
+
+---
+
+## 10. Regras de Ouro ao Desenvolver (Quality Gate)
+
+Antes de abrir qualquer Pull Request ou considerar uma feature concluída, o desenvolvedor deve garantir que:
+
+1. A lógica de negócio está 100% isolada dentro do respectivo Use Case, livre de qualquer acoplamento com o protocolo HTTP (Fastify) ou tipos específicos de ORM (Prisma).
+2. O formato global de payloads de resposta é estritamente respeitado: `{ data: {} }` para respostas bem-sucedidas e `{ error: string, code: string, details: {} }` para falhas capturadas.
+3. A suíte de testes unitários do Use Case criado/alterado está passando e cobre os caminhos felizes e infelizes.
+4. O endpoint correspondente foi validado via teste de integração (`app.inject()`), certificando o funcionamento das validações do Zod e das constraints do PostgreSQL.

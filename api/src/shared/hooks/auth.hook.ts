@@ -1,6 +1,6 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { AppError } from "../errors/app-error";
-import { StaffRole } from "../../generated/prisma/enums";
+import { StaffRole } from "../../generated/prisma/client";
 
 type Role = StaffRole | "CUSTOMER";
 type JwtPayload = {
