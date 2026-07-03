@@ -12,8 +12,199 @@ datasource db {
   provider = "postgresql"
 }
 
-model DeployTest {
+model Barbershop {
+  id                          String   @id @default(cuid())
+  name                        String
+  slug                        String   @unique
+  address                     String
+  cep                         String
+  neighborhood                String
+  city                        String
+  state                       String
+  latitude                    Float?
+  longitude                   Float?
+  timezone                    String
+  phone                       String?
+  logoUrl                     String?
+  slotIntervalMinutes         Int      @default(30)
+  cancellationLeadTimeMinutes Int      @default(180)
+  active                      Boolean  @default(false)
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  staffMembers     StaffMember[]
+  services         Service[]
+  operatingHours   OperatingHour[]
+  blockedDates     BlockedDate[]
+  appointments     Appointment[]
+  invitationTokens InvitationToken[]
+}
+
+model OperatingHour {
+  id           String @id @default(cuid())
+  barbershopId String
+  dayOfWeek    Int
+  startTime    String
+  endTime      String
+
+  barbershop Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+}
+
+model BlockedDate {
+  id           String   @id @default(cuid())
+  barbershopId String
+  startDate    DateTime
+  endDate      DateTime
+  reason       String?
+  createdAt    DateTime @default(now())
+
+  barbershop Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+}
+
+model StaffMember {
+  id           String    @id @default(cuid())
+  barbershopId String?
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         StaffRole
+  isBookable   Boolean   @default(true)
+  isActive     Boolean   @default(true)
+  avatarUrl    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  barbershop    Barbershop?    @relation(fields: [barbershopId], references: [id])
+  refreshTokens RefreshToken[]
+  appointments  Appointment[]  @relation("StaffAppointments")
+  otpTokens     OtpToken[]
+}
+
+model Customer {
   id        String   @id @default(cuid())
-  message   String
+  email     String   @unique
+  name      String
+  googleId  String?  @unique
+  avatarUrl String?
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  refreshTokens RefreshToken[]
+  appointments  Appointment[]
+  magicLinks    MagicLinkToken[]
+  otpTokens     OtpToken[]
+}
+
+model RefreshToken {
+  id            String   @id @default(cuid())
+  tokenHash     String   @unique
+  staffMemberId String?
+  customerId    String?
+  family        String
+  expiresAt     DateTime
+  revoked       Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  staffMember StaffMember? @relation(fields: [staffMemberId], references: [id])
+  customer    Customer?    @relation(fields: [customerId], references: [id])
+}
+
+model MagicLinkToken {
+  id         String    @id @default(cuid())
+  tokenHash  String    @unique
+  customerId String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+}
+
+model OtpToken {
+  id            String    @id @default(cuid())
+  codeHash      String
+  staffMemberId String?
+  customerId    String?
+  expiresAt     DateTime
+  consumedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  staffMember StaffMember? @relation(fields: [staffMemberId], references: [id])
+  customer    Customer?    @relation(fields: [customerId], references: [id])
+}
+
+model InvitationToken {
+  id           String         @id @default(cuid())
+  tokenHash    String         @unique
+  email        String
+  barbershopId String
+  role         InvitationRole
+  expiresAt    DateTime
+  consumedAt   DateTime?
+  createdAt    DateTime       @default(now())
+
+  barbershop Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+}
+
+model Service {
+  id              String   @id @default(cuid())
+  barbershopId    String
+  name            String
+  description     String?
+  durationMinutes Int
+  price           Decimal
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  barbershop   Barbershop    @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+}
+
+model Appointment {
+  id                 String            @id @default(cuid())
+  barbershopId       String
+  customerId         String
+  barberId           String
+  serviceId          String
+  serviceName        String
+  priceAtBooking     Decimal
+  durationAtBooking  Int
+  startTime          DateTime
+  endTime            DateTime
+  status             AppointmentStatus @default(BOOKED)
+  cancelledById      String?
+  cancelledByRole    CancelledByRole?
+  cancellationReason String?
+  cancelledAt        DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  barbershop Barbershop  @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+  customer   Customer    @relation(fields: [customerId], references: [id])
+  barber     StaffMember @relation("StaffAppointments", fields: [barberId], references: [id])
+  service    Service     @relation(fields: [serviceId], references: [id])
+}
+
+enum StaffRole {
+  SUPER_ADMIN
+  BARBERSHOP_ADMIN
+  BARBER
+}
+
+enum AppointmentStatus {
+  BOOKED
+  CANCELLED
+  DONE
+}
+
+enum CancelledByRole {
+  CUSTOMER
+  BARBER
+  BARBERSHOP_ADMIN
+}
+
+enum InvitationRole {
+  BARBERSHOP_ADMIN
+  BARBER
 }
