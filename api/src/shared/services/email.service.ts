@@ -24,6 +24,7 @@ export class EmailService {
   }
 
   async sendOtp(to: string, code: string): Promise<void> {
+    console.log("sending...");
     await resend.emails.send({
       from: FROM_EMAIL,
       to: "caiosamarone10@hotmail.com",
