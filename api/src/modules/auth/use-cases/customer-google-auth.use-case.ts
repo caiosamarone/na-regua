@@ -22,7 +22,10 @@ export class CustomerGoogleAuthUseCase {
         email: googlePayload.email,
         name: googlePayload.name,
       });
-      await this.repository.linkGoogleAccount(customer.id, googlePayload.email);
+    }
+
+    if (!customer.googleId) {
+      await this.repository.linkGoogleAccount(customer.id, googlePayload.sub);
     }
 
     const accessToken = this.jwtService.signAccessToken({

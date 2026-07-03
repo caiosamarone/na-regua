@@ -9,6 +9,7 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().min(1),
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
+  FRONTEND_URL: z.string().url().default("http://localhost:3000"),
 });
 
 export type Env = z.infer<typeof envSchema>;

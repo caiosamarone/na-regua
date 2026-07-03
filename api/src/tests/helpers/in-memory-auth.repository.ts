@@ -51,6 +51,10 @@ export class InMemoryAuthRepository implements AuthRepository {
     return this.customers.find((c) => c.email === email) ?? null;
   }
 
+  async findCustomerById(id: string) {
+    return this.customers.find((c) => c.id === id) ?? null;
+  }
+
   async createRefreshToken(payload: CreateRefreshTokenInput) {
     const token = {
       ...payload,

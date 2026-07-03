@@ -17,6 +17,10 @@ export class PrismaAuthRepository implements AuthRepository {
     return prisma.customer.findUnique({ where: { email } });
   }
 
+  async findCustomerById(id: string) {
+    return prisma.customer.findUnique({ where: { id } });
+  }
+
   async createRefreshToken(payload: CreateRefreshTokenInput) {
     return prisma.refreshToken.create({ data: payload });
   }

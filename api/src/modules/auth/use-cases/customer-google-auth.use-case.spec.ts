@@ -32,6 +32,7 @@ describe("CustomerGoogleAuthUseCase", () => {
 
   it("should create a new customer when email does not exist", async () => {
     (googleService.verifyIdToken as jest.Mock).mockResolvedValue({
+      sub: "google-sub-123",
       email: "new@test.com",
       name: "New User",
     });
@@ -51,6 +52,7 @@ describe("CustomerGoogleAuthUseCase", () => {
 
   it("should return existing customer when email already exists", async () => {
     (googleService.verifyIdToken as jest.Mock).mockResolvedValue({
+      sub: "google-sub-456",
       email: "existing@test.com",
       name: "Existing User",
     });
@@ -64,6 +66,25 @@ describe("CustomerGoogleAuthUseCase", () => {
 
     expect(result.customer.email).toBe("existing@test.com");
     expect(repository.customers).toHaveLength(1);
+  });
+
+  it("should link googleId for existing customer without googleId", async () => {
+    (googleService.verifyIdToken as jest.Mock).mockResolvedValue({
+      sub: "google-sub-789",
+      email: "existing@test.com",
+      name: "Existing User",
+    });
+
+    await repository.createCustomer({
+      email: "existing@test.com",
+      name: "Existing User",
+    });
+
+    const result = await useCase.execute("valid-google-token");
+
+    expect(result.customer.email).toBe("existing@test.com");
+    const stored = repository.customers.find((c) => c.email === "existing@test.com");
+    expect(stored?.googleId).toBe("google-sub-789");
   });
 
   it("should throw when Google token is invalid", async () => {

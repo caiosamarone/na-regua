@@ -11,6 +11,7 @@ export class GoogleAuthService {
       throw new Error("Email não verificado");
     }
     return {
+      sub: payload.sub,
       email: payload.email,
       name: payload.name ?? payload.email.split("@")[0],
     };
