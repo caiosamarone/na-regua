@@ -164,26 +164,26 @@ USING gist (ll_to_earth(latitude, longitude));
 
 ### 2.1 Schemas de Validação
 
-- [ ] **2.1a** — Criar `src/modules/barbershops/models/barbershop.schema.ts`
+- [x] **2.1a** — Criar `src/modules/barbershops/models/barbershop.schema.ts`
 
 ### 2.2 Erros
 
-- [ ] **2.2a** — Criar `src/modules/barbershops/errors/barbershop-errors.ts`
+- [x] **2.2a** — Criar `src/modules/barbershops/errors/barbershop-errors.ts`
 
 ### 2.3 Gateway
 
-- [ ] **2.3a** — Criar interface `src/modules/barbershops/gateways/barbershop.repository.ts`
-- [ ] **2.3b** — Criar `src/modules/barbershops/gateways/prisma-barbershop.repository.ts`
+- [x] **2.3a** — Criar interface `src/modules/barbershops/gateways/barbershop.repository.ts`
+- [x] **2.3b** — Criar `src/modules/barbershops/gateways/prisma-barbershop.repository.ts`
 
 ### 2.4 Helpers
 
-- [ ] **2.4a** — Criar `src/modules/barbershops/helpers/geocoding.helper.ts`
+- [x] **2.4a** — Criar `src/modules/barbershops/helpers/geocoding.helper.ts`
 
 ### 2.5 Use Cases e Controllers
 
-- [ ] **2.5a** — `get-nearby-barbershops.use-case.ts` + controller
-- [ ] **2.5b** — `search-barbershops.use-case.ts` + controller
-- [ ] **2.5c** — `get-barbershop-profile.use-case.ts` + controller
+- [x] **2.5a** — `get-nearby-barbershops.use-case.ts` + controller
+- [x] **2.5b** — `search-barbershops.use-case.ts` + controller
+- [x] **2.5c** — `get-barbershop-profile.use-case.ts` + controller
 - [ ] **2.5d** — `get-bookable-staff.use-case.ts` + controller
 - [ ] **2.5e** — `get-services.use-case.ts` + controller
 - [ ] **2.5f** — `create-barbershop.use-case.ts` + controller
@@ -196,7 +196,7 @@ USING gist (ll_to_earth(latitude, longitude));
 
 ### 2.6 Route
 
-- [ ] **2.6a** — Criar `src/modules/barbershops/barbershops.routes.ts`
+- [x] **2.6a** — Criar `src/modules/barbershops/barbershops.routes.ts`
 
 ---
 
@@ -363,7 +363,7 @@ USING gist (ll_to_earth(latitude, longitude));
 |------|--------|
 | 0 — Fundação | 🟢 Completo |
 | 1 — Auth | 🟡 Em andamento |
-| 2 — Barbershop | 🔴 Não iniciado |
+| 2 — Barbershop | 🟡 Em andamento |
 | 3 — Staff | 🔴 Não iniciado |
 | 4 — Service | 🔴 Não iniciado |
 | 5 — Booking | 🔴 Não iniciado |
