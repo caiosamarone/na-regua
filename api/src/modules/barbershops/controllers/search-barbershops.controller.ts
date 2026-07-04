@@ -9,7 +9,7 @@ const useCase = new SearchBarbershopsUseCase(repository);
 export class SearchBarbershopsController {
   async handle(request: FastifyRequest, reply: FastifyReply) {
     const input = searchQuerySchema.parse(request.query);
-    const result = await useCase.execute(input.q);
+    const result = await useCase.execute(input.q ?? undefined, input.lat, input.lng, input.radiusKm);
     const response = barbershopListResponseSchema.parse({ data: result });
     return reply.code(200).send(response);
   }

@@ -5,7 +5,7 @@ export class SearchBarbershopsUseCase {
     private barbershopRepository: BarbershopRepository,
   ) {}
 
-  async execute(query: string) {
-    return this.barbershopRepository.search(query);
+  async execute(query: string | undefined, lat?: number, lng?: number, radiusKm?: number) {
+    return this.barbershopRepository.search(query, lat, lng, radiusKm);
   }
 }

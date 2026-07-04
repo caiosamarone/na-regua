@@ -24,9 +24,9 @@ End customers find barbershops near their current location.
 
 ### Customer Flow
 1. Browser requests geolocation permission
-2. Coordinates sent to `GET /barbershops/nearby?lat=-23.5&lng=-46.6&radius=5000``
-3. API uses PostgreASQ` hearthdistance` extension (built on `cube`)
-4. Returns active barbershops within the radius that have non-null coordinates
+2. Coordinates sent to `GET /barbershops/search?q=&lat=-23.5&lng=-46.6&radiusKm=5`
+3. API uses PostgreSQL `earthdistance` extension (built on `cube`)
+4. Returns active barbershops within the radius that have non-null coordinates, ordered by distance
 
 ### Query
 ```sql
@@ -39,8 +39,8 @@ WHERE earth_box(ll_to_earth(:lat, :lng), :radius_meters) @> ll_to_earth(lat, lng
 ```
 
 ### Fallback
-- If geolocation permission denied → text search by city/neighborhood
-- Requires `cube` and `earthdistance` PostgreSQL extensionr
+- If geolocation permission denied → text search by name/city/neighborhood (mesmo endpoint, sem `lat`/`lng`/`radiusKm`)
+- Requires `cube` and `earthdistance` PostgreSQL extensions
 - GiST index on `ll_to_earth(lat, lng)`
 
 ## Consequences

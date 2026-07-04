@@ -17,12 +17,11 @@
 - [ ] Criar helpers de testes unitários em `src/tests/unit/` que forneçam repositórios em memória com arrays, para usar em todos os `use-case` (reset entre casos, sem Prisma)
 - [ ] Para cada `use-case` colocado em `src/modules/*/use-cases/`, criar `*.use-case.spec.ts` que cobre caminhos felizes e falhas de regras de negócio. Use Jest (setup já existente) e garanta 100% de cobertura lógica (fluxo positivo + erros).
 
-
 ---
 
 ## Fase 0 — Fundação & Infraestrutura Compartilhada
 
-*Pré-requisito para todas as fases seguintes.*
+_Pré-requisito para todas as fases seguintes._
 
 ### 0.1 Schema Prisma Completo
 
@@ -43,10 +42,12 @@ Criar TODOS os modelos do banco em `prisma/schema.prisma`, substituindo o `Deplo
 - `Appointment` — agendamentos com snapshots, status, campos de cancelamento
 
 **Extensões PostgreSQL**:
+
 - `cube`, `earthdistance` (geolocation)
 - `btree_gist` (exclusion constraint para double-booking)
 
 **Exclusion constraint** na tabela `Appointment`:
+
 ```sql
 ALTER TABLE "Appointment"
 ADD CONSTRAINT no_double_booking
@@ -58,6 +59,7 @@ WHERE (status = 'BOOKED');
 ```
 
 **Índice GiST** para geolocation:
+
 ```sql
 CREATE INDEX idx_barbershop_location ON barbershops
 USING gist (ll_to_earth(latitude, longitude));
@@ -97,7 +99,7 @@ USING gist (ll_to_earth(latitude, longitude));
 
 ## Fase 1 — Módulo: Auth
 
-*Pré-requisito: Fase 0.*
+_Pré-requisito: Fase 0._
 
 **Diretório:** `src/modules/auth/`
 
@@ -128,15 +130,15 @@ USING gist (ll_to_earth(latitude, longitude));
 
 ### 1.5 Controllers
 
-- [x] **1.5a** — `staff-login.controller.ts` em `controllers/`
-- [x] **1.5b** — `customer-google-auth.controller.ts` em `controllers/`
-- [x] **1.5c** — `send-magic-link.controller.ts`
-- [x] **1.5d** — `verify-magic-link.controller.ts`
-- [x] **1.5e** — `refresh-token.controller.ts`
-- [x] **1.5f** — `logout.controller.ts`
-- [x] **1.5g** — `forgot-password.controller.ts`
-- [x] **1.5h** — `reset-password.controller.ts`
-- [x] **1.5i** — `accept-invite.controller.ts`
+- [x] **1.5a** — `staff-login.controller.ts` em `controllers/` _TESTED_
+- [x] **1.5b** — `customer-google-auth.controller.ts` em `controllers/` _TESTED_
+- [x] **1.5c** — `send-magic-link.controller.ts`_TESTED_
+- [x] **1.5d** — `verify-magic-link.controller.ts`_TESTED_
+- [x] **1.5e** — `refresh-token.controller.ts`_TESTED_
+- [x] **1.5f** — `logout.controller.ts`_TESTED_
+- [x] **1.5g** — `forgot-password.controller.ts`_TESTED_
+- [x] **1.5h** — `reset-password.controller.ts`_TESTED_
+- [x] **1.5i** — `accept-invite.controller.ts`_TESTED_
 
 ### 1.6 Route
 
@@ -158,7 +160,7 @@ USING gist (ll_to_earth(latitude, longitude));
 
 ## Fase 2 — Módulo: Barbershop (Tenant)
 
-*Pré-requisito: Fase 0 + Fase 1.*
+_Pré-requisito: Fase 0 + Fase 1._
 
 **Diretório:** `src/modules/barbershops/`
 
@@ -181,18 +183,17 @@ USING gist (ll_to_earth(latitude, longitude));
 
 ### 2.5 Use Cases e Controllers
 
-- [x] **2.5a** — `get-nearby-barbershops.use-case.ts` + controller
-- [x] **2.5b** — `search-barbershops.use-case.ts` + controller
-- [x] **2.5c** — `get-barbershop-profile.use-case.ts` + controller
-- [ ] **2.5d** — `get-bookable-staff.use-case.ts` + controller
-- [ ] **2.5e** — `get-services.use-case.ts` + controller
-- [ ] **2.5f** — `create-barbershop.use-case.ts` + controller
-- [ ] **2.5g** — `update-barbershop-status.use-case.ts` + controller
-- [ ] **2.5h** — `update-barbershop-profile.use-case.ts` + controller
-- [ ] **2.5i** — `replace-operating-hours.use-case.ts` + controller
-- [ ] **2.5j** — `preview-blocked-dates.use-case.ts` + controller
-- [ ] **2.5k** — `confirm-blocked-dates.use-case.ts` + controller
-- [ ] **2.5l** — `delete-blocked-date.use-case.ts` + controller
+- [x] **2.5a** — `get-nearby-barbershops.use-case.ts` + controller _TESTED_
+- [x] **2.5b** — `search-barbershops.use-case.ts` + controller _TESTED_
+- [x] **2.5c** — `get-barbershop-profile.use-case.ts` + controller _TESTED_
+- [x] **2.5d** — `get-bookable-staff.use-case.ts` + controller + spec _TESTED_
+- [x] **2.5e** — `get-services.use-case.ts` + controller + spec _NOT YET_
+- [x] **2.5f** — `create-barbershop.use-case.ts` + controller + spec _TESTED_
+- [x] **2.5g** — `update-barbershop-status.use-case.ts` + controller + spec _TESTED_
+- [x] **2.5h** — `update-barbershop-profile.use-case.ts` + controller + spec _TESTED_
+- [x] **2.5i** — `replace-operating-hours.use-case.ts` + controller + spec _TESTED_
+- [x] **2.5j** — `preview-blocked-dates.use-case.ts` + controller + spec _HAKLF TESTED_ Falta testar com preview true
+- [x] **2.5l** — `delete-blocked-date.use-case.ts` + controller + spec
 
 ### 2.6 Route
 
@@ -202,40 +203,40 @@ USING gist (ll_to_earth(latitude, longitude));
 
 ## Fase 3 — Módulo: Staff
 
-*Pré-requisito: Fase 0 + Fase 1 + Fase 2.*
+_Pré-requisito: Fase 0 + Fase 1 + Fase 2._
 
 **Diretório:** `src/modules/staff/`
 
 ### 3.1 Schemas
 
-- [ ] **3.1a** — Criar `src/modules/staff/models/staff.schema.ts`
+- [x] **3.1a** — Criar `src/modules/staff/models/staff.schema.ts`
 
 ### 3.2 Erros
 
-- [ ] **3.2a** — Criar `src/modules/staff/errors/staff-errors.ts`
+- [x] **3.2a** — Criar `src/modules/staff/errors/staff-errors.ts`
 
 ### 3.3 Gateway
 
-- [ ] **3.3a** — Criar `src/modules/staff/gateways/staff.repository.ts`
-- [ ] **3.3b** — Criar `src/modules/staff/gateways/prisma-staff.repository.ts`
+- [x] **3.3a** — Criar `src/modules/staff/gateways/staff.repository.ts`
+- [x] **3.3b** — Criar `src/modules/staff/gateways/prisma-staff.repository.ts`
 
 ### 3.4 Use Cases e Controllers
 
-- [ ] **3.4a** — `list-staff.use-case.ts` + controller
-- [ ] **3.4b** — `invite-staff.use-case.ts` + controller
-- [ ] **3.4c** — `update-staff.use-case.ts` + controller
-- [ ] **3.4d** — `toggle-bookable.use-case.ts` + controller
-- [ ] **3.4e** — `soft-delete-staff.use-case.ts` + controller
+- [x] **3.4a** — `list-staff.use-case.ts` + controller + spec
+- [x] **3.4b** — `invite-staff.use-case.ts` + controller + spec
+- [x] **3.4c** — `update-staff.use-case.ts` + controller + spec
+- [x] **3.4d** — `toggle-bookable.use-case.ts` + controller + spec
+- [x] **3.4e** — `soft-delete-staff.use-case.ts` + controller + spec
 
 ### 3.5 Route
 
-- [ ] **3.5a** — Criar `src/modules/staff/staff.routes.ts`
+- [x] **3.5a** — Criar `src/modules/staff/staff.routes.ts`
 
 ---
 
 ## Fase 4 — Módulo: Service
 
-*Pré-requisito: Fase 0 + Fase 1 + Fase 2.*
+_Pré-requisito: Fase 0 + Fase 1 + Fase 2._
 
 **Diretório:** `src/modules/services/`
 
@@ -267,7 +268,7 @@ USING gist (ll_to_earth(latitude, longitude));
 
 ## Fase 5 — Módulo: Booking (Appointment)
 
-*Pré-requisito: Fase 0 + Fase 1 + Fase 2 + Fase 3 + Fase 4.*
+_Pré-requisito: Fase 0 + Fase 1 + Fase 2 + Fase 3 + Fase 4._
 
 **Diretório:** `src/modules/booking/`
 
@@ -308,7 +309,7 @@ USING gist (ll_to_earth(latitude, longitude));
 
 ## Fase 6 — Módulo: Metrics
 
-*Pré-requisito: Fase 0 + Fase 1 + Fase 2.*
+_Pré-requisito: Fase 0 + Fase 1 + Fase 2._
 
 **Diretório:** `src/modules/metrics/`
 
@@ -328,7 +329,7 @@ USING gist (ll_to_earth(latitude, longitude));
 
 ## Fase 7 — Módulo: File Upload
 
-*Pré-requisito: Fase 0 + Fase 1.*
+_Pré-requisito: Fase 0 + Fase 1._
 
 **Diretório:** `src/modules/upload/`
 
@@ -359,14 +360,14 @@ USING gist (ll_to_earth(latitude, longitude));
 
 ## Progresso
 
-| Fase | Status |
-|------|--------|
-| 0 — Fundação | 🟢 Completo |
-| 1 — Auth | 🟡 Em andamento |
-| 2 — Barbershop | 🟡 Em andamento |
-| 3 — Staff | 🔴 Não iniciado |
-| 4 — Service | 🔴 Não iniciado |
-| 5 — Booking | 🔴 Não iniciado |
-| 6 — Metrics | 🔴 Não iniciado |
+| Fase            | Status          |
+| --------------- | --------------- |
+| 0 — Fundação    | 🟢 Completo     |
+| 1 — Auth        | 🟢 Completo     |
+| 2 — Barbershop  | 🟢 Completo     |
+| 3 — Staff       | 🟢 Completo     |
+| 4 — Service     | 🔴 Não iniciado |
+| 5 — Booking     | 🔴 Não iniciado |
+| 6 — Metrics     | 🔴 Não iniciado |
 | 7 — File Upload | 🔴 Não iniciado |
-| 8 — Seed | 🔴 Não iniciado |
+| 8 — Seed        | 🔴 Não iniciado |

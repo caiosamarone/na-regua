@@ -1,0 +1,277 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Na Régua — Barbershops (Fase 2)",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/barbershops/search": {
+      "get": {
+        "summary": "Buscar barbearias (texto + localização)",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "radiusKm",
+            "in": "query",
+            "schema": { "type": "number" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Lista de barbearias" }
+        }
+      }
+    },
+    "/barbershops/{slugOrId}": {
+      "get": {
+        "summary": "Perfil da barbearia",
+        "parameters": [
+          {
+            "name": "slugOrId",
+            "in": "path",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Perfil completo" }
+        }
+      }
+    },
+    "/barbershops/{id}/staff/bookable": {
+      "get": {
+        "summary": "Listar staff bookable",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Lista de staff disponível" }
+        }
+      }
+    },
+    "/barbershops/{id}/services": {
+      "get": {
+        "summary": "Listar serviços ativos",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Lista de serviços" }
+        }
+      }
+    },
+    "/barbershops": {
+      "post": {
+        "summary": "Criar barbearia (SUPER_ADMIN)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "slug": { "type": "string" },
+                  "address": { "type": "string" },
+                  "cep": { "type": "string" },
+                  "neighborhood": { "type": "string" },
+                  "city": { "type": "string" },
+                  "state": { "type": "string" },
+                  "timezone": { "type": "string" },
+                  "phone": { "type": "string" },
+                  "adminEmail": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Barbearia criada" }
+        }
+      }
+    },
+    "/barbershops/{id}/status": {
+      "patch": {
+        "summary": "Ativar/desativar barbearia (SUPER_ADMIN)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "active": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Status atualizado" }
+        }
+      }
+    },
+    "/barbershops/{id}/profile": {
+      "patch": {
+        "summary": "Editar perfil (BARBERSHOP_ADMIN)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "phone": { "type": "string" },
+                  "address": { "type": "string" },
+                  "cep": { "type": "string" },
+                  "neighborhood": { "type": "string" },
+                  "city": { "type": "string" },
+                  "state": { "type": "string" },
+                  "timezone": { "type": "string" },
+                  "latitude": { "type": "number" },
+                  "longitude": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Perfil atualizado" }
+        }
+      }
+    },
+    "/barbershops/{id}/operating-hours": {
+      "put": {
+        "summary": "Substituir grade de horários (BARBERSHOP_ADMIN)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "dayOfWeek": { "type": "integer" },
+                    "startTime": { "type": "string" },
+                    "endTime": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Horários atualizados" }
+        }
+      }
+    },
+    "/barbershops/{id}/blocked-dates": {
+      "post": {
+        "summary": "Bloquear datas (preview + confirm, BARBERSHOP_ADMIN)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "confirm",
+            "in": "query",
+            "description": "false ou ausente = preview, true = confirma e persiste",
+            "schema": { "type": "boolean" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "startDate": { "type": "string" },
+                  "endDate": { "type": "string" },
+                  "reason": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Preview ou confirmação do bloqueio" }
+        }
+      }
+    },
+    "/barbershops/{id}/blocked-dates/{blockedDateId}": {
+      "delete": {
+        "summary": "Remover data bloqueada (BARBERSHOP_ADMIN)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "blockedDateId",
+            "in": "path",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Data bloqueada removida" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

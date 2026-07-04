@@ -13,7 +13,7 @@ End customers need to find nearby barbershops. The browser must request location
 ### Flow
 1. Customer visits "Find Barbershops" page
 2. Browser prompts for geolocation permission
-3. If granted → GPS coordinates sent to `GET /barbershops/nearby`
+3. If granted → GPS coordinates sent to `GET /barbershops/search?q=&lat={lat}&lng={lng}&radiusKm=5`
 4. Results displayed as a list with distance indicator
 5. If denied → text search input appears (CEP, city, or neighborhood)
 6. Customer selects a barbershop → sees services → books

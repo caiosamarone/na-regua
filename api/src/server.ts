@@ -9,6 +9,7 @@ import { ZodError } from "zod";
 import { AppError } from "./shared/errors/app-error";
 import { authRoutes } from "./modules/auth/auth.routes";
 import { barbershopRoutes } from "./modules/barbershops/barbershops.routes";
+import { staffRoutes } from "./modules/staff/staff.routes";
 
 const app = Fastify({ logger: true });
 
@@ -27,6 +28,7 @@ app.register(rateLimit, {
 
 app.register(authRoutes);
 app.register(barbershopRoutes);
+app.register(staffRoutes);
 
 app.setErrorHandler((error, request, reply) => {
   if (error instanceof AppError) {

@@ -1,7 +1,12 @@
 import type {
+  Appointment,
   Barbershop,
+  BlockedDate,
+  Customer,
+  InvitationRole,
   OperatingHour,
   Service,
+  StaffMember,
 } from "../../../generated/prisma/client";
 
 export type BarbershopNearbyItem = Pick<
@@ -14,15 +19,59 @@ export type BarbershopProfile = Barbershop & {
   services: Service[];
 };
 
+export type OperatingHourInput = {
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+};
+
+export type CreateBarbershopInput = {
+  name: string;
+  slug: string;
+  address: string;
+  cep: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  timezone: string;
+  phone?: string | null;
+};
+
+export type AppointmentWithRelations = Appointment & {
+  customer: Pick<Customer, "id" | "name" | "email"> | null;
+  service: { name: string } | null;
+};
+
+export type UpdateBarbershopProfileInput = {
+  name?: string;
+  address?: string;
+  cep?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  timezone?: string;
+  phone?: string | null;
+};
+
 export interface BarbershopRepository {
   findById(id: string): Promise<Barbershop | null>;
   findBySlug(slug: string): Promise<Barbershop | null>;
-  findNearby(
-    lat: number,
-    lng: number,
-    radiusKm: number,
-  ): Promise<BarbershopNearbyItem[]>;
-  search(query: string): Promise<BarbershopNearbyItem[]>;
+  search(query: string | undefined, lat?: number, lng?: number, radiusKm?: number): Promise<BarbershopNearbyItem[]>;
   findOperatingHours(barbershopId: string): Promise<OperatingHour[]>;
-  findServices(barbershopId: string): Promise<Service[]>;
+  findServices(barbershopId: string, includeInactive?: boolean): Promise<Service[]>;
+  findBookableStaff(barbershopId: string): Promise<StaffMember[]>;
+  create(data: CreateBarbershopInput): Promise<Barbershop>;
+  updateStatus(barbershopId: string, active: boolean): Promise<Barbershop>;
+  updateProfile(barbershopId: string, data: UpdateBarbershopProfileInput): Promise<Barbershop>;
+  replaceOperatingHours(barbershopId: string, hours: OperatingHourInput[]): Promise<void>;
+  findBlockedDates(barbershopId: string): Promise<BlockedDate[]>;
+  findAppointmentsInRange(barbershopId: string, startDate: Date, endDate: Date): Promise<AppointmentWithRelations[]>;
+  createBlockedDate(barbershopId: string, startDate: Date, endDate: Date, reason: string | null): Promise<BlockedDate>;
+  cancelAppointmentsInRange(barbershopId: string, startDate: Date, endDate: Date, cancelledById: string, cancelledByRole: string, reason: string | null): Promise<number>;
+  deleteBlockedDate(id: string): Promise<void>;
+  createInvitationToken(email: string, barbershopId: string, role: InvitationRole, tokenHash: string, expiresAt: Date): Promise<void>;
 }

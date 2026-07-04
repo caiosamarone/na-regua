@@ -16,6 +16,12 @@ Todas essas ideias precisam passar por PRD, ADR, SPEC e TASK_PLAN antes.
 - galeria de trabalhos
 - redes sociais
 
-5. Automação para limpar dados "apagáveis"
+5. Bloqueio de horário específico dentro do dia
+
+- Hoje o `BlockedDate` só bloqueia dia inteiro (ex: feriado)
+- Futuro: criar entidade `TimeOff` com startTime/endTime (horário local) para bloquear intervalos parciais como "12h30 às 15h30"
+- Importante: converter horário local para UTC igual ao slot calculation
+
+6. Automação para limpar dados "apagáveis"
 
 - o script cleanup ja existe, mas precisamos deixar scheduled 1x por semana

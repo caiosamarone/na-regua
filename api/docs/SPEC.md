@@ -386,8 +386,7 @@ Split shifts: um `dayOfWeek` pode ter múltiplos registros. Ex: (1, "09:00", "12
 
 | Método | Rota                              | Parâmetros                  | Descrição                                           |
 | ------ | --------------------------------- | --------------------------- | --------------------------------------------------- |
-| GET    | `/barbershops/nearby`             | `lat, lng, radius` (metros) | Proximity search via earthdistance                  |
-| GET    | `/barbershops`                    | `?city=&neighborhood=&q=`   | Text search fallback                                |
+| GET    | `/barbershops/search`             | `q?, lat?, lng?, radiusKm?` | Busca textual + proximidade via earthdistance       |
 | GET    | `/barbershops/:id`                | —                           | Perfil + horários + serviços + staff bookable       |
 | GET    | `/barbershops/:id/staff/bookable` | —                           | Lista staff com `isBookable=true` e `isActive=true` |
 | GET    | `/barbershops/:id/services`       | —                           | Lista serviços com `isActive=true`                  |
@@ -469,6 +468,8 @@ Split shifts: um `dayOfWeek` pode ter múltiplos registros. Ex: (1, "09:00", "12
 
 ### 3.3 Geolocation (ADR 007)
 
+A busca por proximidade foi unificada no endpoint `/barbershops/search`. Quando os parâmetros `lat`, `lng` e `radiusKm` são fornecidos, a query utiliza a extensão `earthdistance` do PostgreSQL:
+
 ```sql
 SELECT * FROM barbershops
 WHERE earth_box(ll_to_earth(:lat, :lng), :radius_meters) @> ll_to_earth(latitude, longitude)
@@ -476,11 +477,13 @@ WHERE earth_box(ll_to_earth(:lat, :lng), :radius_meters) @> ll_to_earth(latitude
   AND active = true
   AND latitude IS NOT NULL
   AND longitude IS NOT NULL
+  AND (name ILIKE :q OR city ILIKE :q OR neighborhood ILIKE :q)
+ORDER BY distance ASC
 ```
 
 - Query executa via Prisma `$queryRawUnsafe` (parâmetros bindados)
 - Índice GiST: `CREATE INDEX idx_barbershop_location ON barbershops USING gist (ll_to_earth(latitude, longitude));`
-- Fallback text search: `WHERE active = true AND (city ILIKE :q OR neighborhood ILIKE :q)`
+- Quando `lat`/`lng`/`radiusKm` não são enviados, a busca é puramente textual via Prisma `findMany` com `ILIKE` em `name`, `city` e `neighborhood`
 
 #### Geocoding na Criação
 
