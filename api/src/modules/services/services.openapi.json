@@ -1,0 +1,286 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Na Régua — Módulo de Serviços",
+    "description": "Endpoints de CRUD de serviços da barbearia (Fase 4). Use <<BASE_URL>> como variável de ambiente no Hoppscotch.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "<<BASE_URL>>",
+      "description": "Base URL configurada no Hoppscotch"
+    }
+  ],
+  "paths": {
+    "/barbershops/{id}/services": {
+      "get": {
+        "summary": "Listar serviços",
+        "description": "Retorna serviços ativos do barbershop. Se ?all=true, retorna todos (requer token BARBERSHOP_ADMIN).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID da barbearia"
+          },
+          {
+            "name": "all",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "enum": ["true", "false"] },
+            "description": "Se true, lista também serviços inativos (requer auth BARBERSHOP_ADMIN)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de serviços",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ServiceItem"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      },
+      "post": {
+        "summary": "Criar serviço",
+        "description": "Cria um novo serviço no barbershop. Requer token BARBERSHOP_ADMIN.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID da barbearia"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateServiceInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Serviço criado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/ServiceItem" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/services/{id}": {
+      "patch": {
+        "summary": "Atualizar serviço",
+        "description": "Atualiza nome, descrição, duração e/ou preço de um serviço. Requer token BARBERSHOP_ADMIN.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID do serviço"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateServiceInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Serviço atualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/ServiceItem" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "delete": {
+        "summary": "Desativar serviço (soft-delete)",
+        "description": "Marca isActive=false no serviço. Permite desativar a qualquer momento, mesmo com appointments futuros. Requer token BARBERSHOP_ADMIN.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID do serviço"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Serviço desativado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "message": { "type": "string", "example": "Serviço desativado" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "ServiceItem": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "CUID do serviço" },
+          "name": { "type": "string", "description": "Nome do serviço" },
+          "description": { "type": "string", "nullable": true, "description": "Descrição do serviço" },
+          "durationMinutes": { "type": "integer", "description": "Duração em minutos" },
+          "price": { "type": "number", "description": "Preço em reais (BRL)" },
+          "isActive": { "type": "boolean", "description": "Se o serviço está ativo" },
+          "barbershopId": { "type": "string", "description": "ID da barbearia" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CreateServiceInput": {
+        "type": "object",
+        "required": ["name", "durationMinutes", "price"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 100, "description": "Nome do serviço" },
+          "description": { "type": "string", "maxLength": 500, "nullable": true, "description": "Descrição opcional" },
+          "durationMinutes": { "type": "integer", "minimum": 5, "maximum": 480, "description": "Duração em minutos" },
+          "price": { "type": "number", "minimum": 0, "description": "Preço em reais (BRL)" }
+        }
+      },
+      "UpdateServiceInput": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 100, "description": "Nome do serviço" },
+          "description": { "type": "string", "maxLength": 500, "nullable": true, "description": "Descrição opcional" },
+          "durationMinutes": { "type": "integer", "minimum": 5, "maximum": 480, "description": "Duração em minutos" },
+          "price": { "type": "number", "minimum": 0, "description": "Preço em reais (BRL)" }
+        }
+      }
+    },
+    "responses": {
+      "ValidationError": {
+        "description": "Erro de validação (Zod)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Dados inválidos" },
+                "code": { "type": "string", "example": "VALIDATION_ERROR" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Token ausente, inválido ou expirado",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Token inválido ou ausente" },
+                "code": { "type": "string", "example": "UNAUTHORIZED" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Permissão insuficiente",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Permissão insuficiente" },
+                "code": { "type": "string", "example": "FORBIDDEN" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Recurso não encontrado",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Serviço não encontrado" },
+                "code": { "type": "string", "example": "SERVICE_NOT_FOUND" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

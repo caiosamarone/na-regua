@@ -14,7 +14,7 @@
 
 > O projeto já tem o Jest configurado no `package.json` / `jest.config.ts`. Siga o "Modelo de Troféu" descrito na SPEC.
 
-- [ ] Criar helpers de testes unitários em `src/tests/unit/` que forneçam repositórios em memória com arrays, para usar em todos os `use-case` (reset entre casos, sem Prisma)
+- [x] Criar helpers de testes unitários em `src/tests/helpers/` que forneçam repositórios em memória com arrays, para usar em todos os `use-case` (reset entre casos, sem Prisma)
 - [ ] Para cada `use-case` colocado em `src/modules/*/use-cases/`, criar `*.use-case.spec.ts` que cobre caminhos felizes e falhas de regras de negócio. Use Jest (setup já existente) e garanta 100% de cobertura lógica (fluxo positivo + erros).
 
 ---
@@ -183,11 +183,11 @@ _Pré-requisito: Fase 0 + Fase 1._
 
 ### 2.5 Use Cases e Controllers
 
-- [x] **2.5a** — `get-nearby-barbershops.use-case.ts` + controller _TESTED_
+- [ ] **2.5a** — `get-nearby-barbershops.use-case.ts` + controller _NOT YET_
 - [x] **2.5b** — `search-barbershops.use-case.ts` + controller _TESTED_
 - [x] **2.5c** — `get-barbershop-profile.use-case.ts` + controller _TESTED_
 - [x] **2.5d** — `get-bookable-staff.use-case.ts` + controller + spec _TESTED_
-- [x] **2.5e** — `get-services.use-case.ts` + controller + spec _NOT YET_
+- [x] **2.5e** — `get-services.use-case.ts` + controller + spec _TESTED_
 - [x] **2.5f** — `create-barbershop.use-case.ts` + controller + spec _TESTED_
 - [x] **2.5g** — `update-barbershop-status.use-case.ts` + controller + spec _TESTED_
 - [x] **2.5h** — `update-barbershop-profile.use-case.ts` + controller + spec _TESTED_
@@ -242,27 +242,34 @@ _Pré-requisito: Fase 0 + Fase 1 + Fase 2._
 
 ### 4.1 Schemas
 
-- [ ] **4.1a** — Criar `src/modules/services/models/service.schema.ts`
+- [x] **4.1a** — Criar `src/modules/services/models/service.schema.ts`
 
 ### 4.2 Erros
 
-- [ ] **4.2a** — Criar `src/modules/services/errors/service-errors.ts`
+- [x] **4.2a** — Criar `src/modules/services/errors/service-errors.ts`
 
 ### 4.3 Gateway
 
-- [ ] **4.3a** — Criar `src/modules/services/gateways/service.repository.ts`
-- [ ] **4.3b** — Criar `src/modules/services/gateways/prisma-service.repository.ts`
+- [x] **4.3a** — Criar `src/modules/services/gateways/service.repository.ts`
+- [x] **4.3b** — Criar `src/modules/services/gateways/prisma-service.repository.ts`
 
 ### 4.4 Use Cases e Controllers
 
-- [ ] **4.4a** — `list-services.use-case.ts` + controller
-- [ ] **4.4b** — `create-service.use-case.ts` + controller
-- [ ] **4.4c** — `update-service.use-case.ts` + controller
-- [ ] **4.4d** — `soft-delete-service.use-case.ts` + controller
+- [x] **4.4a** — `list-services.use-case.ts` + controller
+- [x] **4.4b** — `create-service.use-case.ts` + controller
+- [x] **4.4c** — `update-service.use-case.ts` + controller
+- [x] **4.4d** — `soft-delete-service.use-case.ts` + controller
 
 ### 4.5 Route
 
-- [ ] **4.5a** — Criar `src/modules/services/services.routes.ts`
+- [x] **4.5a** — Criar `src/modules/services/services.routes.ts`
+
+### 4.6 Testes
+
+- [x] Criar spec unitário `src/modules/services/use-cases/list-services.use-case.spec.ts`
+- [x] Criar spec unitário `src/modules/services/use-cases/create-service.use-case.spec.ts`
+- [x] Criar spec unitário `src/modules/services/use-cases/update-service.use-case.spec.ts`
+- [x] Criar spec unitário `src/modules/services/use-cases/soft-delete-service.use-case.spec.ts`
 
 ---
 
@@ -274,29 +281,29 @@ _Pré-requisito: Fase 0 + Fase 1 + Fase 2 + Fase 3 + Fase 4._
 
 ### 5.1 Schemas
 
-- [ ] **5.1a** — Criar `src/modules/booking/models/appointment.schema.ts`
+- [x] **5.1a** — Criar `src/modules/booking/models/appointment.schema.ts`
 
 ### 5.2 Erros
 
-- [ ] **5.2a** — Criar `src/modules/booking/errors/booking-errors.ts`
+- [x] **5.2a** — Criar `src/modules/booking/errors/booking-errors.ts`
 
 ### 5.3 Helpers
 
-- [ ] **5.3a** — Criar `src/modules/booking/helpers/slot-math.helper.ts`
+- [x] **5.3a** — Criar `src/modules/booking/helpers/slot-math.helper.ts`
 
 ### 5.4 Gateway
 
-- [ ] **5.4a** — Criar `src/modules/booking/gateways/appointment.repository.ts`
-- [ ] **5.4b** — Criar `src/modules/booking/gateways/prisma-appointment.repository.ts`
+- [x] **5.4a** — Criar `src/modules/booking/gateways/appointment.repository.ts`
+- [x] **5.4b** — Criar `src/modules/booking/gateways/prisma-appointment.repository.ts`
 
 ### 5.5 Use Cases e Controllers
 
-- [ ] **5.5a** — `get-slots.use-case.ts` + controller
-- [ ] **5.5b** — `create-appointment.use-case.ts` + controller
-- [ ] **5.5c** — `list-customer-appointments.use-case.ts` + controller
-- [ ] **5.5d** — `get-customer-appointment-detail.use-case.ts` + controller
-- [ ] **5.5e** — `customer-cancel-appointment.use-case.ts` + controller
-- [ ] **5.5f** — `staff-list-appointments.use-case.ts` + controller
+- [x] **5.5a** — `get-slots.use-case.ts` + controller
+- [x] **5.5b** — `create-appointment.use-case.ts` + controller
+- [x] **5.5c** — `list-customer-appointments.use-case.ts` + controller
+- [x] **5.5d** — `get-customer-appointment-detail.use-case.ts` + controller
+- [x] **5.5e** — `customer-cancel-appointment.use-case.ts` + controller
+- [x] **5.5f** — `staff-list-appointments.use-case.ts` + controller
 - [ ] **5.5g** — `staff-get-appointment-detail.use-case.ts` + controller
 - [ ] **5.5h** — `staff-cancel-appointment.use-case.ts` + controller
 - [ ] **5.5i** — `mark-appointment-done.use-case.ts` + controller
@@ -354,7 +361,7 @@ _Pré-requisito: Fase 0 + Fase 1._
 
 ## Fase 8 — Seed & Scripts Auxiliares
 
-- [ ] **8.1** — Criar `prisma/seed.ts` com dados de teste
+- [x] **8.1** — Criar `prisma/seed.ts` com dados de teste
 
 ---
 
@@ -366,8 +373,8 @@ _Pré-requisito: Fase 0 + Fase 1._
 | 1 — Auth        | 🟢 Completo     |
 | 2 — Barbershop  | 🟢 Completo     |
 | 3 — Staff       | 🟢 Completo     |
-| 4 — Service     | 🔴 Não iniciado |
-| 5 — Booking     | 🔴 Não iniciado |
+| 4 — Service     | 🟢 Completo     |
+| 5 — Booking     | 🟡 Parcial (5.5g, 5.5h, 5.5i, 5.6a pendentes) |
 | 6 — Metrics     | 🔴 Não iniciado |
 | 7 — File Upload | 🔴 Não iniciado |
-| 8 — Seed        | 🔴 Não iniciado |
+| 8 — Seed        | 🟢 Completo |

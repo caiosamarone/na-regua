@@ -2,7 +2,6 @@ import { FastifyInstance } from "fastify";
 import { SearchBarbershopsController } from "./controllers/search-barbershops.controller";
 import { GetBarbershopProfileController } from "./controllers/get-barbershop-profile.controller";
 import { GetBookableStaffController } from "./controllers/get-bookable-staff.controller";
-import { GetServicesController } from "./controllers/get-services.controller";
 import { CreateBarbershopController } from "./controllers/create-barbershop.controller";
 import { UpdateBarbershopStatusController } from "./controllers/update-barbershop-status.controller";
 import { UpdateBarbershopProfileController } from "./controllers/update-barbershop-profile.controller";
@@ -15,7 +14,6 @@ export async function barbershopRoutes(app: FastifyInstance) {
   const searchController = new SearchBarbershopsController();
   const profileController = new GetBarbershopProfileController();
   const bookableStaffController = new GetBookableStaffController();
-  const servicesController = new GetServicesController();
   const createController = new CreateBarbershopController();
   const updateStatusController = new UpdateBarbershopStatusController();
   const updateProfileController = new UpdateBarbershopProfileController();
@@ -27,8 +25,6 @@ export async function barbershopRoutes(app: FastifyInstance) {
   app.get("/barbershops/search", searchController.handle.bind(searchController));
   app.get("/barbershops/:slugOrId", profileController.handle.bind(profileController));
   app.get("/barbershops/:id/staff/bookable", bookableStaffController.handle.bind(bookableStaffController));
-  app.get("/barbershops/:id/services", servicesController.handle.bind(servicesController));
-
   // Super Admin routes
   app.post("/barbershops", {
     preHandler: [authenticate, requireRole("SUPER_ADMIN")],
