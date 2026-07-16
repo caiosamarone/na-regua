@@ -26,6 +26,7 @@ export const updateStaffInputSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   role: z.enum(["BARBERSHOP_ADMIN", "BARBER"]).optional(),
   isBookable: z.boolean().optional(),
+  isActive: z.boolean().optional(),
 });
 
 export const listStaffResponseSchema = z.object({

@@ -1,5 +1,9 @@
 import { prisma } from "../../../config/prisma";
-import type { StaffRepository, CreateStaffInput, UpdateStaffInput } from "./staff.repository";
+import type {
+  StaffRepository,
+  CreateStaffInput,
+  UpdateStaffInput,
+} from "./staff.repository";
 
 export class PrismaStaffRepository implements StaffRepository {
   async findByBarbershopId(barbershopId: string, includeInactive = false) {
@@ -26,7 +30,10 @@ export class PrismaStaffRepository implements StaffRepository {
   }
 
   async softDelete(id: string) {
-    await prisma.staffMember.update({ where: { id }, data: { isActive: false } });
+    await prisma.staffMember.update({
+      where: { id },
+      data: { isActive: false, isBookable: false },
+    });
   }
 
   async findFutureBookings(staffId: string) {

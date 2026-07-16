@@ -223,8 +223,7 @@ _Pré-requisito: Fase 0 + Fase 1 + Fase 2._
 
 - [x] **3.4a** — `list-staff.use-case.ts` + controller + spec _TESTED_
 - [x] **3.4b** — `invite-staff.use-case.ts` + controller + spec _TESTED_
-- [x] **3.4c** — `update-staff.use-case.ts` + controller + spec (inclui isBookable, substitui toggle-bookable)
-- [x] **3.4d** — ~~`toggle-bookable.use-case.ts` + controller + spec~~ (removido — mesclado no update-staff)
+- [x] **3.4c** — `update-staff.use-case.ts` + controller + spec _TESTED_
 - [x] **3.4e** — `soft-delete-staff.use-case.ts` + controller + spec
 
 ### 3.5 Route
