@@ -3,6 +3,7 @@ import { defineConfig } from "jest";
 export default defineConfig({
   verbose: true,
   clearMocks: true,
+  injectGlobals: true,
   collectCoverage: true,
   coverageDirectory: "coverage",
   coverageProvider: "v8",

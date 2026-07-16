@@ -1,5 +1,3 @@
-/// <reference types="jest" />
-
 import { InMemoryBarbershopRepository } from "../../../tests/helpers/in-memory-barbershop.repository";
 import { BlockedDatesUseCase } from "./blocked-dates.use-case";
 
@@ -85,7 +83,11 @@ describe("BlockedDatesUseCase", () => {
       repository.barbershops.push(defaultBarbershop);
       repository.appointments.push(...defaultAppointments);
 
-      const result = await useCase.execute("shop-1", "2026-07-05", "2026-07-07");
+      const result = await useCase.execute(
+        "shop-1",
+        "2026-07-05",
+        "2026-07-07",
+      );
 
       expect(result).toHaveLength(2);
       expect(result[0]).toMatchObject({
@@ -101,7 +103,9 @@ describe("BlockedDatesUseCase", () => {
 
       await useCase.execute("shop-1", "2026-07-05", "2026-07-07");
 
-      expect(repository.appointments.every((a) => a.status === "BOOKED")).toBe(true);
+      expect(repository.appointments.every((a) => a.status === "BOOKED")).toBe(
+        true,
+      );
       expect(repository.blockedDates).toHaveLength(0);
     });
   });
@@ -112,7 +116,12 @@ describe("BlockedDatesUseCase", () => {
       repository.appointments.push(...defaultAppointments);
 
       const result = await useCase.execute(
-        "shop-1", "2026-07-05", "2026-07-07", "Feriado", "admin-id", "BARBERSHOP_ADMIN",
+        "shop-1",
+        "2026-07-05",
+        "2026-07-07",
+        "Feriado",
+        "admin-id",
+        "BARBERSHOP_ADMIN",
       );
 
       expect(result.blockedDate.reason).toBe("Feriado");
@@ -131,7 +140,14 @@ describe("BlockedDatesUseCase", () => {
       ).rejects.toThrow("Barbearia não encontrada");
 
       await expect(
-        useCase.execute("non-existent", "2026-07-05", "2026-07-07", null, "admin-id", "BARBERSHOP_ADMIN"),
+        useCase.execute(
+          "non-existent",
+          "2026-07-05",
+          "2026-07-07",
+          null,
+          "admin-id",
+          "BARBERSHOP_ADMIN",
+        ),
       ).rejects.toThrow("Barbearia não encontrada");
     });
 
@@ -146,7 +162,14 @@ describe("BlockedDatesUseCase", () => {
       ).rejects.toThrow("Não é possível bloquear datas passadas");
 
       await expect(
-        useCase.execute("shop-2", "2020-01-01", "2020-01-02", null, "admin-id", "BARBERSHOP_ADMIN"),
+        useCase.execute(
+          "shop-2",
+          "2020-01-01",
+          "2020-01-02",
+          null,
+          "admin-id",
+          "BARBERSHOP_ADMIN",
+        ),
       ).rejects.toThrow("Não é possível bloquear datas passadas");
     });
   });

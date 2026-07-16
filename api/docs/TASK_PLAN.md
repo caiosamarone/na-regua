@@ -253,10 +253,10 @@ _Pré-requisito: Fase 0 + Fase 1 + Fase 2._
 
 ### 4.4 Use Cases e Controllers
 
-- [x] **4.4a** — `list-services.use-case.ts` + controller
-- [x] **4.4b** — `create-service.use-case.ts` + controller
-- [x] **4.4c** — `update-service.use-case.ts` + controller
-- [x] **4.4d** — `soft-delete-service.use-case.ts` + controller
+- [x] **4.4a** — `list-services.use-case.ts` + controller _TESTED_
+- [x] **4.4b** — `create-service.use-case.ts` + controller _TESTED_
+- [x] **4.4c** — `update-service.use-case.ts` + controller _TESTED_
+- [x] **4.4d** — `soft-delete-service.use-case.ts` + controller _TESTED_
 
 ### 4.5 Route
 
@@ -297,18 +297,18 @@ _Pré-requisito: Fase 0 + Fase 1 + Fase 2 + Fase 3 + Fase 4._
 ### 5.5 Use Cases e Controllers
 
 - [x] **5.5a** — `get-slots.use-case.ts` + controller
-- [x] **5.5b** — `create-appointment.use-case.ts` + controller
+- [x] **5.5b** — `create-appointment.use-case.ts` + controller _TESTED_
 - [x] **5.5c** — `list-customer-appointments.use-case.ts` + controller
 - [x] **5.5d** — `get-customer-appointment-detail.use-case.ts` + controller
 - [x] **5.5e** — `customer-cancel-appointment.use-case.ts` + controller
 - [x] **5.5f** — `staff-list-appointments.use-case.ts` + controller
-- [ ] **5.5g** — `staff-get-appointment-detail.use-case.ts` + controller
-- [ ] **5.5h** — `staff-cancel-appointment.use-case.ts` + controller
-- [ ] **5.5i** — `mark-appointment-done.use-case.ts` + controller
+- [x] **5.5g** — `staff-get-appointment-detail.use-case.ts` + controller
+- [x] **5.5h** — `staff-cancel-appointment.use-case.ts` + controller
+- [x] **5.5i** — `mark-appointment-done.use-case.ts` + controller
 
 ### 5.6 Route
 
-- [ ] **5.6a** — Criar `src/modules/booking/booking.routes.ts`
+- [x] **5.6a** — Criar `src/modules/booking/booking.routes.ts`
 
 ---
 
@@ -365,14 +365,14 @@ _Pré-requisito: Fase 0 + Fase 1._
 
 ## Progresso
 
-| Fase            | Status                                        |
-| --------------- | --------------------------------------------- |
-| 0 — Fundação    | 🟢 Completo                                   |
-| 1 — Auth        | 🟢 Completo                                   |
-| 2 — Barbershop  | 🟢 Completo                                   |
-| 3 — Staff       | 🟢 Completo                                   |
-| 4 — Service     | 🟢 Completo                                   |
-| 5 — Booking     | 🟡 Parcial (5.5g, 5.5h, 5.5i, 5.6a pendentes) |
-| 6 — Metrics     | 🔴 Não iniciado                               |
-| 7 — File Upload | 🔴 Não iniciado                               |
-| 8 — Seed        | 🟢 Completo                                   |
+| Fase            | Status          |
+| --------------- | --------------- |
+| 0 — Fundação    | 🟢 Completo     |
+| 1 — Auth        | 🟢 Completo     |
+| 2 — Barbershop  | 🟢 Completo     |
+| 3 — Staff       | 🟢 Completo     |
+| 4 — Service     | 🟢 Completo     |
+| 5 — Booking     | 🟢 Completo     |
+| 6 — Metrics     | 🔴 Não iniciado |
+| 7 — File Upload | 🔴 Não iniciado |
+| 8 — Seed        | 🟢 Completo     |

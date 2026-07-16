@@ -11,6 +11,7 @@ import { authRoutes } from "./modules/auth/auth.routes";
 import { barbershopRoutes } from "./modules/barbershops/barbershops.routes";
 import { staffRoutes } from "./modules/staff/staff.routes";
 import { serviceRoutes } from "./modules/services/services.routes";
+import { bookingRoutes } from "./modules/booking/booking.routes";
 
 const app = Fastify({ logger: true });
 
@@ -31,6 +32,7 @@ app.register(authRoutes);
 app.register(barbershopRoutes);
 app.register(staffRoutes);
 app.register(serviceRoutes);
+app.register(bookingRoutes);
 
 app.setErrorHandler((error, request, reply) => {
   if (error instanceof AppError) {

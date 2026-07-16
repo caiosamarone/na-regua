@@ -20,7 +20,17 @@ describe("CreateAppointmentUseCase", () => {
       id: shopId,
       name: "Barbearia Teste",
       active: true,
+      timezone: "America/Sao_Paulo",
+      slotIntervalMinutes: 30,
       cancellationLeadTimeMinutes: 180,
+    } as any);
+
+    repository.operatingHours.push({
+      id: "oh-1",
+      barbershopId: shopId,
+      dayOfWeek: 1,
+      startTime: "09:00",
+      endTime: "18:00",
     } as any);
 
     repository.services.push({
@@ -147,5 +157,67 @@ describe("CreateAppointmentUseCase", () => {
         startTime: "2026-07-06T14:00:00.000Z",
       }),
     ).rejects.toThrow("Profissional não encontrado");
+  });
+
+  it("should throw when date is blocked", async () => {
+    repository.blockedDates.push({
+      id: "bd-1",
+      barbershopId: shopId,
+      startDate: new Date("2026-07-06T00:00:00Z"),
+      endDate: new Date("2026-07-06T23:59:59Z"),
+      reason: "Feriado",
+      createdAt: new Date(),
+    } as any);
+
+    await expect(
+      useCase.execute({
+        barbershopId: shopId,
+        customerId,
+        barberId,
+        serviceId,
+        startTime: "2026-07-06T14:00:00.000Z",
+      }),
+    ).rejects.toThrow("Data bloqueada");
+  });
+
+  it("should throw when barbershop is closed on that day", async () => {
+    // 2026-07-05 is Sunday (dayOfWeek = 0), no operating hours for it
+    await expect(
+      useCase.execute({
+        barbershopId: shopId,
+        customerId,
+        barberId,
+        serviceId,
+        startTime: "2026-07-05T14:00:00.000Z",
+      }),
+    ).rejects.toThrow("Barbearia fechada neste dia");
+  });
+
+  it("should throw when outside operating hours", async () => {
+    // 14:00 UTC = 11:00 BRT on July 6 (Mon) — operating hours are 09:00-18:00, so this is fine
+    // 23:00 UTC = 20:00 BRT — outside operating hours
+    await expect(
+      useCase.execute({
+        barbershopId: shopId,
+        customerId,
+        barberId,
+        serviceId,
+        startTime: "2026-07-06T23:00:00.000Z",
+      }),
+    ).rejects.toThrow("Fora do horário de funcionamento");
+  });
+
+  it("should throw when slot does not align with interval", async () => {
+    repository.barbershops[0].slotIntervalMinutes = 30;
+
+    await expect(
+      useCase.execute({
+        barbershopId: shopId,
+        customerId,
+        barberId,
+        serviceId,
+        startTime: "2026-07-06T14:15:00.000Z",
+      }),
+    ).rejects.toThrow("Horário não respeita o intervalo de agendamento");
   });
 });

@@ -19,14 +19,14 @@ export const createServiceInputSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().max(500).optional().nullable(),
   durationMinutes: z.number().int().min(5).max(480),
-  price: z.number().min(0),
+  price: z.number().min(0).max(99999.99),
 });
 
 export const updateServiceInputSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().max(500).optional().nullable(),
   durationMinutes: z.number().int().min(5).max(480).optional(),
-  price: z.number().min(0).optional(),
+  price: z.number().min(0).max(99999.99).optional(),
 });
 
 export const listServicesResponseSchema = z.object({

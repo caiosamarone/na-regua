@@ -20,7 +20,7 @@ export const createAppointmentInputSchema = z.object({
   barbershopId: z.string().min(1),
   barberId: z.string().min(1),
   serviceId: z.string().min(1),
-  startTime: z.string().datetime(),
+  startTime: z.string().datetime({ offset: true }),
 });
 
 export const cancelAppointmentInputSchema = z.object({
@@ -49,8 +49,8 @@ export const appointmentResponseSchema = z.object({
 
 export const listAppointmentsQuerySchema = z.object({
   status: z.enum(["BOOKED", "CANCELLED", "DONE"]).optional(),
-  from: z.string().datetime().optional(),
-  to: z.string().datetime().optional(),
+  from: z.string().datetime({ offset: true }).optional(),
+  to: z.string().datetime({ offset: true }).optional(),
   barberId: z.string().optional(),
   page: z.coerce.number().int().min(1).optional().default(1),
   pageSize: z.coerce.number().int().min(1).max(100).optional().default(20),
