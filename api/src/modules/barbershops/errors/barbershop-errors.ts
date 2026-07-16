@@ -23,3 +23,15 @@ export class OperatingHoursOverlapError extends AppError {
     super(400, "OPERATING_HOURS_OVERLAP", message);
   }
 }
+
+export class BlockedDatesInPastError extends AppError {
+  constructor(message = "Não é possível bloquear datas passadas") {
+    super(400, "BLOCKED_DATES_IN_PAST", message);
+  }
+}
+
+export class BlockedDateNotFoundError extends AppError {
+  constructor(message = "Data bloqueada não encontrada") {
+    super(404, "BLOCKED_DATE_NOT_FOUND", message);
+  }
+}

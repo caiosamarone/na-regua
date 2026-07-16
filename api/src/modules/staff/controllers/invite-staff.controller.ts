@@ -1,13 +1,15 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { PrismaStaffRepository } from "../gateways/prisma-staff.repository";
+import { PrismaAuthRepository } from "../../auth/gateways/prisma-auth.repository";
 import { InviteStaffUseCase } from "../use-cases/invite-staff.use-case";
 import { inviteStaffInputSchema } from "../models/staff.schema";
 import { EmailService } from "../../../shared/services/email.service";
 import { getBarbershopIdFromToken } from "../../../shared/hooks/auth.hook";
 
 const repository = new PrismaStaffRepository();
+const authRepository = new PrismaAuthRepository();
 const emailService = new EmailService();
-const useCase = new InviteStaffUseCase(repository, emailService);
+const useCase = new InviteStaffUseCase(repository, authRepository, emailService);
 
 export class InviteStaffController {
   async handle(request: FastifyRequest, reply: FastifyReply) {

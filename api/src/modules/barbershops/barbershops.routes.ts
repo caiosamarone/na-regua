@@ -6,7 +6,7 @@ import { CreateBarbershopController } from "./controllers/create-barbershop.cont
 import { UpdateBarbershopStatusController } from "./controllers/update-barbershop-status.controller";
 import { UpdateBarbershopProfileController } from "./controllers/update-barbershop-profile.controller";
 import { ReplaceOperatingHoursController } from "./controllers/replace-operating-hours.controller";
-import { BlockedDatesController } from "./controllers/preview-blocked-dates.controller";
+import { BlockedDatesController } from "./controllers/blocked-dates.controller";
 import { DeleteBlockedDateController } from "./controllers/delete-blocked-date.controller";
 import { authenticate, requireRole } from "../../shared/hooks/auth.hook";
 

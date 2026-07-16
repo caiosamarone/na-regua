@@ -1,0 +1,403 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "staff",
+    "description": "Endpoints de gerenciamento da equipe da barbearia (Fase 3). Requer token BARBERSHOP_ADMIN. Use <<SERVER_URL>> como variável de ambiente no Hoppscotch.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "<<SERVER_URL>>",
+      "description": "Base URL configurada no Hoppscotch"
+    }
+  ],
+  "paths": {
+    "/barbershops/{id}/staff": {
+      "get": {
+        "summary": "Listar equipe",
+        "description": "Lista membros da equipe. Se ?all=true, retorna também inativos. Requer token BARBERSHOP_ADMIN.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID da barbearia"
+          },
+          {
+            "name": "all",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "enum": ["true", "false"] },
+            "description": "Se true, lista também membros inativos"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de membros da equipe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/StaffMember" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      },
+      "post": {
+        "summary": "Convidar membro",
+        "description": "Envia convite por email para um novo membro da equipe. Requer token BARBERSHOP_ADMIN.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID da barbearia"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/InviteStaffInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Membro convidado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/StaffMember" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/staff/{id}": {
+      "patch": {
+        "summary": "Atualizar membro",
+        "description": "Atualiza nome e/ou cargo de um membro. Requer token BARBERSHOP_ADMIN.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID do membro"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateStaffInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Membro atualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "name": { "type": "string" },
+                        "role": {
+                          "type": "string",
+                          "enum": ["SUPER_ADMIN", "BARBERSHOP_ADMIN", "BARBER"]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "delete": {
+        "summary": "Remover membro (soft-delete)",
+        "description": "Marca isActive=false no membro. Requer token BARBERSHOP_ADMIN.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID do membro"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Membro removido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string",
+                          "example": "Membro removido"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/staff/{id}/bookable": {
+      "patch": {
+        "summary": "Alternar bookable",
+        "description": "Ativa ou desativa a disponibilidade do membro para agendamentos. Requer token BARBERSHOP_ADMIN.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID do membro"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ToggleBookableInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Disponibilidade alterada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "isBookable": { "type": "boolean" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "StaffMember": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "CUID do membro" },
+          "name": { "type": "string", "description": "Nome do membro" },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Email do membro"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["SUPER_ADMIN", "BARBERSHOP_ADMIN", "BARBER"],
+            "description": "Papel na plataforma"
+          },
+          "isBookable": {
+            "type": "boolean",
+            "description": "Se está disponível para agendamentos"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Se a conta está ativa"
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "URL do avatar"
+          },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "InviteStaffInput": {
+        "type": "object",
+        "required": ["email", "name", "role"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Email do convidado"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Nome do convidado"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["BARBERSHOP_ADMIN", "BARBER"],
+            "description": "Papel do convidado"
+          }
+        }
+      },
+      "UpdateStaffInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Nome do membro"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["BARBERSHOP_ADMIN", "BARBER"],
+            "description": "Novo papel"
+          }
+        }
+      },
+      "ToggleBookableInput": {
+        "type": "object",
+        "required": ["isBookable"],
+        "properties": {
+          "isBookable": {
+            "type": "boolean",
+            "description": "true = disponível, false = indisponível"
+          }
+        }
+      }
+    },
+    "responses": {
+      "ValidationError": {
+        "description": "Erro de validação (Zod)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Dados inválidos" },
+                "code": { "type": "string", "example": "VALIDATION_ERROR" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Token ausente, inválido ou expirado",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Token inválido ou ausente"
+                },
+                "code": { "type": "string", "example": "UNAUTHORIZED" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Permissão insuficiente",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Permissão insuficiente"
+                },
+                "code": { "type": "string", "example": "FORBIDDEN" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Recurso não encontrado",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Membro não encontrado"
+                },
+                "code": { "type": "string", "example": "STAFF_NOT_FOUND" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

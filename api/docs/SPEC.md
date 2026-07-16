@@ -320,7 +320,7 @@ Error 401: INVITATION_INVALID — token expirado ou já consumido
 | ---------------------------------- | ----------- | ---------------- | ------ | -------- |
 | Criar/ativar/desativar barbershop  | ✅          | ❌               | ❌     | ❌       |
 | Gerenciar staff/services/horários  | ❌          | ✅               | ❌     | ❌       |
-| Toggle isBookable (qualquer staff) | ❌          | ✅               | ❌     | ❌       |
+| Atualizar isBookable (qualquer staff)       | ❌          | ✅               | ❌     | ❌       |
 | Ver métricas                       | ❌          | ✅               | ❌     | ❌       |
 | Ver agenda (todos staff)           | ❌          | ✅               | ❌     | ❌       |
 | Ver própria agenda                 | ❌          | ✅               | ✅     | ❌       |
@@ -509,8 +509,7 @@ StaffMember (mesma tabela do módulo Auth — vide seção 2.1)
 | GET    | `/barbershops/:id/staff`          | BARBERSHOP_ADMIN | Listar todo staff do tenant                    |
 | GET    | `/barbershops/:id/staff/bookable` | No               | Listar apenas staff bookable (customer picker) |
 | POST   | `/barbershops/:id/staff`          | BARBERSHOP_ADMIN | Convidar novo staff (email + role)             |
-| PATCH  | `/staff/:id`                      | BARBERSHOP_ADMIN | Editar nome, role                              |
-| PATCH  | `/staff/:id/bookable`             | BARBERSHOP_ADMIN | Toggle isBookable                              |
+| PATCH  | `/staff/:id`                      | BARBERSHOP_ADMIN | Editar nome, role, isBookable                  |
 | DELETE | `/staff/:id`                      | BARBERSHOP_ADMIN | Soft-delete (isActive=false)                   |
 
 - `POST /staff` cria um `InvitationToken` e dispara email de convite (mesmo fluxo `accept-invite`)
@@ -526,9 +525,7 @@ WHERE role IN ('BARBER', 'BARBERSHOP_ADMIN')
   AND barbershopId = :id
 ```
 
-#### Toggle isBookable
-
-- `BARBER`: default `true` — admin pode desativar
+- `BARBER`: default `true` — admin pode desativar via `PATCH /staff/:id`
 - `BARBERSHOP_ADMIN`: default `false` — admin pode ativar para si
 - `SUPER_ADMIN`: sempre `isBookable = false` (não é tenant-scoped)
 - Barbeiro **não** altera a própria flag; apenas o Barbershop Admin

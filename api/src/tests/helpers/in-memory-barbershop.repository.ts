@@ -260,6 +260,10 @@ export class InMemoryBarbershopRepository implements BarbershopRepository {
     return count;
   }
 
+  async findBlockedDateById(id: string) {
+    return this.blockedDates.find((bd) => bd.id === id) ?? null;
+  }
+
   async deleteBlockedDate(id: string) {
     this.blockedDates = this.blockedDates.filter((bd) => bd.id !== id);
   }

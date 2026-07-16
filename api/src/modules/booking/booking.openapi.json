@@ -1,0 +1,507 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Na Régua — Módulo de Agendamentos (Booking)",
+    "description": "Endpoints de agendamento, consulta de slots e gerenciamento de appointments (Fase 5). Use <<SERVER_URL>> como variável de ambiente no Hoppscotch.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "<<SERVER_URL>>",
+      "description": "Base URL configurada no Hoppscotch"
+    }
+  ],
+  "paths": {
+    "/barbershops/{id}/slots": {
+      "get": {
+        "summary": "Consultar horários disponíveis",
+        "description": "Retorna slots disponíveis para um serviço e data específicos. Opcionalmente filtra por barbeiro.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID da barbearia"
+          },
+          {
+            "name": "serviceId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID do serviço"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "date" },
+            "description": "Data no formato YYYY-MM-DD"
+          },
+          {
+            "name": "barberId",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "Filtrar por barbeiro específico"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de slots disponíveis",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/SlotItem" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/appointments": {
+      "post": {
+        "summary": "Criar agendamento (cliente)",
+        "description": "Cria um novo agendamento. Requer token de cliente (JWT de customer).",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateAppointmentInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Agendamento criado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/AppointmentItem" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "409": {
+            "description": "Conflito (horário já agendado)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": { "type": "string", "example": "Horário indisponível" },
+                    "code": { "type": "string", "example": "SLOT_UNAVAILABLE" },
+                    "details": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Listar agendamentos do cliente",
+        "description": "Retorna agendamentos do cliente autenticado com paginação. Requer token de cliente.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "enum": ["BOOKED", "CANCELLED", "DONE"] },
+            "description": "Filtrar por status"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date-time" },
+            "description": "Filtrar a partir desta data (ISO datetime)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date-time" },
+            "description": "Filtrar até esta data (ISO datetime)"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "default": 1 },
+            "description": "Número da página"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 },
+            "description": "Itens por página"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista paginada de agendamentos",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PaginatedAppointments" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/appointments/{id}": {
+      "get": {
+        "summary": "Detalhe do agendamento (cliente)",
+        "description": "Retorna detalhes completos de um agendamento do cliente autenticado. Requer token de cliente.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID do agendamento"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalhes do agendamento",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/AppointmentDetail" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/appointments/{id}/cancel": {
+      "patch": {
+        "summary": "Cancelar agendamento (cliente)",
+        "description": "Cancela um agendamento do cliente autenticado. Pode retornar warning se houver política de cancelamento. Requer token de cliente.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID do agendamento"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CancelAppointmentInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Agendamento cancelado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        { "$ref": "#/components/schemas/AppointmentItem" },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "warning": { "type": "string", "description": "Aviso sobre política de cancelamento" }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/barbershops/{id}/appointments": {
+      "get": {
+        "summary": "Listar agendamentos (staff)",
+        "description": "Retorna agendamentos da barbearia com paginação. Requer token de staff (BARBER, BARBERSHOP_ADMIN, SUPER_ADMIN).",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID da barbearia"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "enum": ["BOOKED", "CANCELLED", "DONE"] },
+            "description": "Filtrar por status"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date-time" },
+            "description": "Filtrar a partir desta data (ISO datetime)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date-time" },
+            "description": "Filtrar até esta data (ISO datetime)"
+          },
+          {
+            "name": "barberId",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "Filtrar por barbeiro"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "default": 1 },
+            "description": "Número da página"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 },
+            "description": "Itens por página"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista paginada de agendamentos",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PaginatedAppointmentsWithDetails" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "SlotItem": {
+        "type": "object",
+        "properties": {
+          "startTimeLocal": { "type": "string", "description": "Horário de início no fuso local (HH:mm ou ISO)" },
+          "startTimeUtc": { "type": "string", "format": "date-time", "description": "Horário de início em UTC" },
+          "endTimeUtc": { "type": "string", "format": "date-time", "description": "Horário de fim em UTC" }
+        }
+      },
+      "CreateAppointmentInput": {
+        "type": "object",
+        "required": ["barbershopId", "barberId", "serviceId", "startTime"],
+        "properties": {
+          "barbershopId": { "type": "string", "description": "ID da barbearia" },
+          "barberId": { "type": "string", "description": "ID do barbeiro" },
+          "serviceId": { "type": "string", "description": "ID do serviço" },
+          "startTime": { "type": "string", "format": "date-time", "description": "Horário de início em ISO datetime" }
+        }
+      },
+      "CancelAppointmentInput": {
+        "type": "object",
+        "properties": {
+          "reason": { "type": "string", "maxLength": 500, "description": "Motivo do cancelamento" }
+        }
+      },
+      "AppointmentItem": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "CUID do agendamento" },
+          "barbershopId": { "type": "string" },
+          "customerId": { "type": "string" },
+          "barberId": { "type": "string" },
+          "serviceId": { "type": "string" },
+          "serviceName": { "type": "string" },
+          "priceAtBooking": { "type": "number", "description": "Preço praticado no momento do agendamento" },
+          "durationAtBooking": { "type": "integer", "description": "Duração em minutos no momento do agendamento" },
+          "startTime": { "type": "string", "format": "date-time" },
+          "endTime": { "type": "string", "format": "date-time" },
+          "status": { "type": "string", "enum": ["BOOKED", "CANCELLED", "DONE"] },
+          "cancelledById": { "type": "string", "nullable": true },
+          "cancelledByRole": { "type": "string", "enum": ["CUSTOMER", "BARBER", "BARBERSHOP_ADMIN"], "nullable": true },
+          "cancellationReason": { "type": "string", "nullable": true },
+          "cancelledAt": { "type": "string", "format": "date-time", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "AppointmentDetail": {
+        "allOf": [
+          { "$ref": "#/components/schemas/AppointmentItem" },
+          {
+            "type": "object",
+            "properties": {
+              "barber": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "name": { "type": "string" },
+                  "avatarUrl": { "type": "string", "nullable": true }
+                }
+              },
+              "customer": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "name": { "type": "string" }
+                }
+              },
+              "service": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "name": { "type": "string" },
+                  "durationMinutes": { "type": "integer" },
+                  "price": { "type": "number" }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "PaginatedAppointments": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/AppointmentItem" }
+          },
+          "meta": { "$ref": "#/components/schemas/PaginationMeta" }
+        }
+      },
+      "PaginatedAppointmentsWithDetails": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/AppointmentDetail" }
+          },
+          "meta": { "$ref": "#/components/schemas/PaginationMeta" }
+        }
+      },
+      "PaginationMeta": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "description": "Página atual" },
+          "pageSize": { "type": "integer", "description": "Itens por página" },
+          "total": { "type": "integer", "description": "Total de itens" }
+        }
+      }
+    },
+    "responses": {
+      "ValidationError": {
+        "description": "Erro de validação (Zod)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Dados inválidos" },
+                "code": { "type": "string", "example": "VALIDATION_ERROR" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Token ausente, inválido ou expirado",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Token inválido ou ausente" },
+                "code": { "type": "string", "example": "UNAUTHORIZED" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Permissão insuficiente",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Permissão insuficiente" },
+                "code": { "type": "string", "example": "FORBIDDEN" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Recurso não encontrado",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Agendamento não encontrado" },
+                "code": { "type": "string", "example": "APPOINTMENT_NOT_FOUND" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

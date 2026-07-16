@@ -183,7 +183,6 @@ _Pré-requisito: Fase 0 + Fase 1._
 
 ### 2.5 Use Cases e Controllers
 
-- [ ] **2.5a** — `get-nearby-barbershops.use-case.ts` + controller _NOT YET_
 - [x] **2.5b** — `search-barbershops.use-case.ts` + controller _TESTED_
 - [x] **2.5c** — `get-barbershop-profile.use-case.ts` + controller _TESTED_
 - [x] **2.5d** — `get-bookable-staff.use-case.ts` + controller + spec _TESTED_
@@ -192,8 +191,8 @@ _Pré-requisito: Fase 0 + Fase 1._
 - [x] **2.5g** — `update-barbershop-status.use-case.ts` + controller + spec _TESTED_
 - [x] **2.5h** — `update-barbershop-profile.use-case.ts` + controller + spec _TESTED_
 - [x] **2.5i** — `replace-operating-hours.use-case.ts` + controller + spec _TESTED_
-- [x] **2.5j** — `preview-blocked-dates.use-case.ts` + controller + spec _HAKLF TESTED_ Falta testar com preview true
-- [x] **2.5l** — `delete-blocked-date.use-case.ts` + controller + spec
+- [x] **2.5j** — `preview-blocked-dates.use-case.ts` + controller + spec _TESTED_
+- [x] **2.5l** — `delete-blocked-date.use-case.ts` + controller + spec _TESTED_
 
 ### 2.6 Route
 
@@ -222,10 +221,10 @@ _Pré-requisito: Fase 0 + Fase 1 + Fase 2._
 
 ### 3.4 Use Cases e Controllers
 
-- [x] **3.4a** — `list-staff.use-case.ts` + controller + spec
-- [x] **3.4b** — `invite-staff.use-case.ts` + controller + spec
-- [x] **3.4c** — `update-staff.use-case.ts` + controller + spec
-- [x] **3.4d** — `toggle-bookable.use-case.ts` + controller + spec
+- [x] **3.4a** — `list-staff.use-case.ts` + controller + spec _TESTED_
+- [x] **3.4b** — `invite-staff.use-case.ts` + controller + spec _TESTED_
+- [x] **3.4c** — `update-staff.use-case.ts` + controller + spec (inclui isBookable, substitui toggle-bookable)
+- [x] **3.4d** — ~~`toggle-bookable.use-case.ts` + controller + spec~~ (removido — mesclado no update-staff)
 - [x] **3.4e** — `soft-delete-staff.use-case.ts` + controller + spec
 
 ### 3.5 Route
@@ -367,14 +366,14 @@ _Pré-requisito: Fase 0 + Fase 1._
 
 ## Progresso
 
-| Fase            | Status          |
-| --------------- | --------------- |
-| 0 — Fundação    | 🟢 Completo     |
-| 1 — Auth        | 🟢 Completo     |
-| 2 — Barbershop  | 🟢 Completo     |
-| 3 — Staff       | 🟢 Completo     |
-| 4 — Service     | 🟢 Completo     |
+| Fase            | Status                                        |
+| --------------- | --------------------------------------------- |
+| 0 — Fundação    | 🟢 Completo                                   |
+| 1 — Auth        | 🟢 Completo                                   |
+| 2 — Barbershop  | 🟢 Completo                                   |
+| 3 — Staff       | 🟢 Completo                                   |
+| 4 — Service     | 🟢 Completo                                   |
 | 5 — Booking     | 🟡 Parcial (5.5g, 5.5h, 5.5i, 5.6a pendentes) |
-| 6 — Metrics     | 🔴 Não iniciado |
-| 7 — File Upload | 🔴 Não iniciado |
-| 8 — Seed        | 🟢 Completo |
+| 6 — Metrics     | 🔴 Não iniciado                               |
+| 7 — File Upload | 🔴 Não iniciado                               |
+| 8 — Seed        | 🟢 Completo                                   |

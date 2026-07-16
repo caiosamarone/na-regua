@@ -2,12 +2,12 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Na Régua — Módulo de Serviços",
-    "description": "Endpoints de CRUD de serviços da barbearia (Fase 4). Use <<BASE_URL>> como variável de ambiente no Hoppscotch.",
+    "description": "Endpoints de CRUD de serviços da barbearia (Fase 4). Use <<SERVER_URL>> como variável de ambiente no Hoppscotch.",
     "version": "1.0.0"
   },
   "servers": [
     {
-      "url": "<<BASE_URL>>",
+      "url": "<<SERVER_URL>>",
       "description": "Base URL configurada no Hoppscotch"
     }
   ],

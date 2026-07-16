@@ -198,6 +198,10 @@ export class PrismaBarbershopRepository implements BarbershopRepository {
     return result.count;
   }
 
+  async findBlockedDateById(id: string) {
+    return prisma.blockedDate.findUnique({ where: { id } });
+  }
+
   async deleteBlockedDate(id: string) {
     await prisma.blockedDate.delete({ where: { id } });
   }

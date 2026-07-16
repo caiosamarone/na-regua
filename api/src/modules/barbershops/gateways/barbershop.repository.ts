@@ -72,6 +72,7 @@ export interface BarbershopRepository {
   findAppointmentsInRange(barbershopId: string, startDate: Date, endDate: Date): Promise<AppointmentWithRelations[]>;
   createBlockedDate(barbershopId: string, startDate: Date, endDate: Date, reason: string | null): Promise<BlockedDate>;
   cancelAppointmentsInRange(barbershopId: string, startDate: Date, endDate: Date, cancelledById: string, cancelledByRole: string, reason: string | null): Promise<number>;
+  findBlockedDateById(id: string): Promise<BlockedDate | null>;
   deleteBlockedDate(id: string): Promise<void>;
   createInvitationToken(email: string, barbershopId: string, role: InvitationRole, tokenHash: string, expiresAt: Date): Promise<void>;
 }

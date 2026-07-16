@@ -1,0 +1,447 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Na Régua — Módulo de Autenticação",
+    "description": "Endpoints de autenticação da plataforma (Fase 1). Use <<SERVER_URL>> como variável de ambiente no Hoppscotch.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "<<SERVER_URL>>",
+      "description": "Base URL configurada no Hoppscotch"
+    }
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "summary": "Login de staff (email + senha)",
+        "description": "Autentica um membro da equipe (BARBER, BARBERSHOP_ADMIN, SUPER_ADMIN) com email e senha. Retorna accessToken (30min) + refreshToken.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/StaffLoginInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login bem-sucedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/StaffLoginResponse" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/auth/google": {
+      "post": {
+        "summary": "Login com Google (cliente)",
+        "description": "Autentica um cliente via idToken do Google. Cria conta se não existir. Retorna accessToken + refreshToken.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/GoogleAuthInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login Google bem-sucedido",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MagicLinkResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "Logout de staff",
+        "description": "Invalida o refreshToken (ou todos os dispositivos com allDevices=true).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LogoutInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Logout realizado",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MessageResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/auth/magic-link": {
+      "post": {
+        "summary": "Solicitar magic link (cliente)",
+        "description": "Envia um email com link mágico para login sem senha.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MagicLinkRequestInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Email enviado (se conta existir)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MessageResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/auth/magic-link/verify": {
+      "post": {
+        "summary": "Verificar magic link",
+        "description": "Troca o token do magic link por accessToken + refreshToken.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MagicLinkVerifyInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token válido",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MagicLinkResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "summary": "Renovar accessToken",
+        "description": "Troca um refreshToken válido por um novo par accessToken + refreshToken (rotação).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RefreshTokenInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tokens renovados",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RefreshTokenResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/auth/forgot-password": {
+      "post": {
+        "summary": "Solicitar reset de senha (staff)",
+        "description": "Envia email com OTP de 6 dígitos para resetar a senha.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ForgotPasswordInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Email enviado (se conta existir)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MessageResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/auth/reset-password": {
+      "post": {
+        "summary": "Resetar senha (staff)",
+        "description": "Troca a senha usando email + OTP recebido por email.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ResetPasswordInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Senha redefinida",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MessageResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/auth/accept-invite": {
+      "post": {
+        "summary": "Aceitar convite (staff)",
+        "description": "Cria a conta de um membro da equipe a partir de um token de convite enviado por email.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AcceptInviteInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Conta ativada",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MessageResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "StaffLoginInput": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email", "description": "Email do staff" },
+          "password": { "type": "string", "minLength": 8, "description": "Senha do staff" }
+        }
+      },
+      "StaffLoginResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": { "type": "string", "description": "JWT de acesso (30min)" },
+          "refreshToken": { "type": "string", "description": "Refresh token para renovação" },
+          "staff": { "$ref": "#/components/schemas/StaffPayload" }
+        }
+      },
+      "StaffPayload": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "ID do staff" },
+          "name": { "type": "string", "description": "Nome do staff" },
+          "email": { "type": "string", "format": "email" },
+          "role": { "type": "string", "enum": ["SUPER_ADMIN", "BARBERSHOP_ADMIN", "BARBER"], "description": "Papel do usuário" },
+          "barbershopId": { "type": "string", "nullable": true, "description": "ID da barbearia (null para SUPER_ADMIN)" }
+        }
+      },
+      "GoogleAuthInput": {
+        "type": "object",
+        "required": ["idToken"],
+        "properties": {
+          "idToken": { "type": "string", "description": "idToken do Google Identity Services" }
+        }
+      },
+      "LogoutInput": {
+        "type": "object",
+        "required": ["refreshToken"],
+        "properties": {
+          "refreshToken": { "type": "string", "description": "Refresh token a invalidar" },
+          "allDevices": { "type": "boolean", "description": "Se true, invalida todos os dispositivos" }
+        }
+      },
+      "MagicLinkRequestInput": {
+        "type": "object",
+        "required": ["email"],
+        "properties": {
+          "email": { "type": "string", "format": "email", "description": "Email do cliente" }
+        }
+      },
+      "MagicLinkVerifyInput": {
+        "type": "object",
+        "required": ["token"],
+        "properties": {
+          "token": { "type": "string", "description": "Token do magic link" }
+        }
+      },
+      "MagicLinkResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": { "type": "string", "description": "JWT de acesso (30min)" },
+          "refreshToken": { "type": "string", "description": "Refresh token para renovação" },
+          "customer": { "$ref": "#/components/schemas/CustomerPayload" }
+        }
+      },
+      "CustomerPayload": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "ID do cliente" },
+          "name": { "type": "string", "description": "Nome do cliente" },
+          "email": { "type": "string", "format": "email" }
+        }
+      },
+      "RefreshTokenInput": {
+        "type": "object",
+        "required": ["refreshToken"],
+        "properties": {
+          "refreshToken": { "type": "string", "description": "RefreshToken válido" }
+        }
+      },
+      "RefreshTokenResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": { "type": "string", "description": "Novo JWT de acesso" },
+          "refreshToken": { "type": "string", "description": "Novo refresh token" }
+        }
+      },
+      "ForgotPasswordInput": {
+        "type": "object",
+        "required": ["email"],
+        "properties": {
+          "email": { "type": "string", "format": "email", "description": "Email do staff" }
+        }
+      },
+      "ResetPasswordInput": {
+        "type": "object",
+        "required": ["email", "otp", "newPassword"],
+        "properties": {
+          "email": { "type": "string", "format": "email", "description": "Email do staff" },
+          "otp": { "type": "string", "minLength": 6, "maxLength": 6, "description": "Código OTP de 6 dígitos" },
+          "newPassword": { "type": "string", "minLength": 8, "description": "Nova senha (mín. 8 caracteres, 1 maiúscula, 1 símbolo)" }
+        }
+      },
+      "AcceptInviteInput": {
+        "type": "object",
+        "required": ["token", "name", "password"],
+        "properties": {
+          "token": { "type": "string", "description": "Token de convite" },
+          "name": { "type": "string", "description": "Nome do staff" },
+          "password": { "type": "string", "minLength": 8, "description": "Senha (mín. 8 caracteres, 1 maiúscula, 1 símbolo)" }
+        }
+      },
+      "MessageResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "message": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "ValidationError": {
+        "description": "Erro de validação (Zod)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Dados inválidos" },
+                "code": { "type": "string", "example": "VALIDATION_ERROR" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Token ausente, inválido ou expirado",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Token inválido ou ausente" },
+                "code": { "type": "string", "example": "UNAUTHORIZED" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Permissão insuficiente",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Permissão insuficiente" },
+                "code": { "type": "string", "example": "FORBIDDEN" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Recurso não encontrado",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Recurso não encontrado" },
+                "code": { "type": "string", "example": "NOT_FOUND" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

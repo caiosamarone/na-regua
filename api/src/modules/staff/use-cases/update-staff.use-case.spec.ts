@@ -16,13 +16,14 @@ describe("UpdateStaffUseCase", () => {
     repository.reset();
   });
 
-  it("should update staff name and role", async () => {
+  it("should update staff name, role, and isBookable", async () => {
     repository.staff.push({
       id: "s1", barbershopId: "shop-1", email: "joao@test.com", passwordHash: "hash", name: "João", role: "BARBER", isBookable: true, isActive: true, avatarUrl: null, createdAt: new Date(), updatedAt: new Date(),
     });
-    const result = await useCase.execute("s1", { name: "João Silva", role: "BARBERSHOP_ADMIN" });
+    const result = await useCase.execute("s1", { name: "João Silva", role: "BARBERSHOP_ADMIN", isBookable: false });
     expect(result.name).toBe("João Silva");
     expect(result.role).toBe("BARBERSHOP_ADMIN");
+    expect(result.isBookable).toBe(false);
   });
 
   it("should throw StaffNotFoundError when staff does not exist", async () => {

@@ -150,7 +150,10 @@ export const blockedDateInputSchema = z.object({
   startDate: dateStringSchema,
   endDate: dateStringSchema,
   reason: z.string().max(200).optional().nullable(),
-});
+}).refine(
+  (data) => data.endDate >= data.startDate,
+  { message: "endDate não pode ser menor que startDate", path: ["endDate"] },
+);
 
 export const blockedDateQuerySchema = z.object({
   confirm: z

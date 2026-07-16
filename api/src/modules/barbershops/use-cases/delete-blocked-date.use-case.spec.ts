@@ -33,4 +33,8 @@ describe("DeleteBlockedDateUseCase", () => {
 
     expect(repository.blockedDates).toHaveLength(0);
   });
+
+  it("should throw BlockedDateNotFoundError when blocked date does not exist", async () => {
+    await expect(useCase.execute("non-existent-id")).rejects.toThrow("Data bloqueada não encontrada");
+  });
 });

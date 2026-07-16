@@ -8,8 +8,8 @@ export const staffMemberSchema = z.object({
   isBookable: z.boolean(),
   isActive: z.boolean(),
   avatarUrl: z.string().nullable(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
+  createdAt: z.date().transform((d) => d.toISOString()),
+  updatedAt: z.date().transform((d) => d.toISOString()),
 });
 
 export const listStaffQuerySchema = z.object({
@@ -25,10 +25,7 @@ export const inviteStaffInputSchema = z.object({
 export const updateStaffInputSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   role: z.enum(["BARBERSHOP_ADMIN", "BARBER"]).optional(),
-});
-
-export const toggleBookableInputSchema = z.object({
-  isBookable: z.boolean(),
+  isBookable: z.boolean().optional(),
 });
 
 export const listStaffResponseSchema = z.object({

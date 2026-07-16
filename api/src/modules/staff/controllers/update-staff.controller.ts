@@ -14,6 +14,6 @@ export class UpdateStaffController {
     const { id } = request.params;
     const input = updateStaffInputSchema.parse(request.body);
     const result = await useCase.execute(id, input);
-    return reply.code(200).send({ data: { id: result.id, name: result.name, role: result.role } });
+    return reply.code(200).send({ data: { id: result.id, name: result.name, role: result.role, isBookable: result.isBookable } });
   }
 }

@@ -25,10 +25,6 @@ export class PrismaStaffRepository implements StaffRepository {
     return prisma.staffMember.update({ where: { id }, data }) as any;
   }
 
-  async toggleBookable(id: string, isBookable: boolean) {
-    return prisma.staffMember.update({ where: { id }, data: { isBookable } }) as any;
-  }
-
   async softDelete(id: string) {
     await prisma.staffMember.update({ where: { id }, data: { isActive: false } });
   }

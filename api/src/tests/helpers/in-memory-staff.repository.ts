@@ -62,14 +62,7 @@ export class InMemoryStaffRepository implements StaffRepository {
     if (!s) throw new Error("Not found");
     if (data.name) s.name = data.name;
     if (data.role) s.role = data.role as StaffRole;
-    s.updatedAt = new Date();
-    return { ...s, barbershop: null, appointments: [], refreshTokens: [], otpTokens: [] } as any;
-  }
-
-  async toggleBookable(id: string, isBookable: boolean) {
-    const s = this.staff.find((s) => s.id === id);
-    if (!s) throw new Error("Not found");
-    s.isBookable = isBookable;
+    if (data.isBookable !== undefined) s.isBookable = data.isBookable;
     s.updatedAt = new Date();
     return { ...s, barbershop: null, appointments: [], refreshTokens: [], otpTokens: [] } as any;
   }
