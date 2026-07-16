@@ -152,7 +152,7 @@ model Service {
   name            String
   description     String?
   durationMinutes Int
-  price           Decimal
+  price           Decimal  @db.Decimal(7, 2)
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

@@ -224,7 +224,7 @@ _Pré-requisito: Fase 0 + Fase 1 + Fase 2._
 - [x] **3.4a** — `list-staff.use-case.ts` + controller + spec _TESTED_
 - [x] **3.4b** — `invite-staff.use-case.ts` + controller + spec _TESTED_
 - [x] **3.4c** — `update-staff.use-case.ts` + controller + spec _TESTED_
-- [x] **3.4e** — `soft-delete-staff.use-case.ts` + controller + spec
+- [x] **3.4e** — `soft-delete-staff.use-case.ts` + controller + spec _TESTED_
 
 ### 3.5 Route
 
