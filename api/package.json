@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx --env-file=.env --watch src/server.ts",
-    "build": "prisma db push --accept-data-loss && prisma generate && tsc --project tsconfig.build.json",
+    "build": "prisma migrate deploy && prisma generate && tsc --project tsconfig.build.json",
     "start": "tsx src/server.ts",
     "db:setup": "sh -c 'prisma migrate deploy 2>/dev/null || (prisma db push --accept-data-loss && prisma migrate resolve --applied 0_init)'",
     "db:generate": "prisma generate",
