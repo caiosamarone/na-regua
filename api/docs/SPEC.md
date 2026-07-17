@@ -321,7 +321,9 @@ Error 401: INVITATION_INVALID — token expirado ou já consumido
 | Criar/ativar/desativar barbershop  | ✅          | ❌               | ❌     | ❌       |
 | Gerenciar staff/services/horários  | ❌          | ✅               | ❌     | ❌       |
 | Atualizar isBookable (qualquer staff)       | ❌          | ✅               | ❌     | ❌       |
-| Ver métricas                       | ❌          | ✅               | ❌     | ❌       |
+| Ver métricas globais               | ✅          | ❌               | ❌     | ❌       |
+| Ver métricas da barbearia          | ❌          | ✅               | ❌     | ❌       |
+| Ver métricas pessoais              | ❌          | ❌               | ✅     | ❌       |
 | Ver agenda (todos staff)           | ❌          | ✅               | ❌     | ❌       |
 | Ver própria agenda                 | ❌          | ✅               | ✅     | ❌       |
 | Marcar DONE                        | ❌          | ✅               | ✅     | ❌       |
@@ -807,30 +809,79 @@ PATCH /appointments/:id/cancel (BARBER | BARBERSHOP_ADMIN)
 
 ## 7. Módulo: Metrics
 
-### 7.1 Endpoint
+### 7.1 Endpoints
 
-| Método | Rota                       | Auth             | Parâmetros                         | Descrição           |
-| ------ | -------------------------- | ---------------- | ---------------------------------- | ------------------- |
-| GET    | `/barbershops/:id/metrics` | BARBERSHOP_ADMIN | `from` (ISO date), `to` (ISO date) | Métricas do período |
+Três endpoints segmentados por role:
+
+| Role              | Método | Rota                       | Parâmetros                         | Descrição                                         |
+| ----------------- | ------ | -------------------------- | ---------------------------------- | ------------------------------------------------- |
+| SUPER_ADMIN       | GET    | `/admin/metrics`           | `from` (ISO date), `to` (ISO date) | Métricas agregadas de todas as barbearias         |
+| BARBERSHOP_ADMIN  | GET    | `/barbershops/:id/metrics` | `from` (ISO date), `to` (ISO date) | Métricas da barbearia no período                  |
+| BARBER            | GET    | `/staff/me/metrics`        | `from` (ISO date), `to` (ISO date) | Métricas pessoais do barbeiro autenticado         |
 
 ### 7.2 Agregações
 
-Todas as queries escopo `barbershopId` + range `[from, to]` em `startTime`.
+Todas as queries usam range `[from, to]` em `startTime`.
+Apenas appointments com **status = DONE** são considerados para receita.
+Valores usam `priceAtBooking` (snapshot), não preço atual do serviço.
 
-#### Total Revenue
+#### 7.2.1 SUPER_ADMIN — `GET /admin/metrics`
 
 ```sql
+-- Número de barbearias ativas
+SELECT COUNT(*)::int as "activeBarbershops"
+FROM "Barbershop"
+WHERE active = true
+
+-- Receita total do período (todas barbearias)
+SELECT COALESCE(SUM("priceAtBooking")::decimal, 0) as "totalRevenue"
+FROM "Appointment"
+WHERE status = 'DONE'
+  AND "startTime" >= :from
+  AND "startTime" < :to + interval '1 day'
+
+-- Total DONE no período
+SELECT COUNT(*)::int as "totalDone"
+FROM "Appointment"
+WHERE status = 'DONE'
+  AND "startTime" >= :from
+  AND "startTime" < :to + interval '1 day'
+
+-- Total cancelamentos no período
+SELECT COUNT(*)::int as "totalCancelled"
+FROM "Appointment"
+WHERE status = 'CANCELLED'
+  AND "startTime" >= :from
+  AND "startTime" < :to + interval '1 day'
+
+-- Top 10 barbearias por receita
+SELECT b.id as "barbershopId",
+       b.name as "barbershopName",
+       COUNT(a.id)::int as "appointmentCount",
+       COALESCE(SUM(a."priceAtBooking")::decimal, 0) as "revenue"
+FROM "Barbershop" b
+LEFT JOIN "Appointment" a ON a."barbershopId" = b.id
+  AND a.status = 'DONE'
+  AND a."startTime" >= :from
+  AND a."startTime" < :to + interval '1 day'
+WHERE b.active = true
+GROUP BY b.id, b.name
+ORDER BY "revenue" DESC
+LIMIT 10
+```
+
+#### 7.2.2 BARBERSHOP_ADMIN — `GET /barbershops/:id/metrics`
+
+```sql
+-- Total Revenue
 SELECT SUM("priceAtBooking")::decimal
 FROM "Appointment"
 WHERE "barbershopId" = :id
   AND status = 'DONE'
   AND "startTime" >= :from
   AND "startTime" < :to + interval '1 day'
-```
 
-#### Top Services
-
-```sql
+-- Top Services
 SELECT "serviceName",
        COUNT(*)::int as "bookingCount",
        SUM("priceAtBooking")::decimal as "revenue"
@@ -840,11 +891,8 @@ WHERE "barbershopId" = :id AND status = 'DONE'
 GROUP BY "serviceName"
 ORDER BY "revenue" DESC
 LIMIT 10
-```
 
-#### Top Barbers
-
-```sql
+-- Top Barbers
 SELECT "barberId",
        COUNT(*)::int as "appointmentCount",
        SUM("priceAtBooking")::decimal as "revenue"
@@ -854,13 +902,8 @@ WHERE "barbershopId" = :id AND status = 'DONE'
 GROUP BY "barberId"
 ORDER BY "revenue" DESC
 LIMIT 10
-```
 
-- Agrupa por **quem realizou** o atendimento (`barberId`), independente do role — um `BARBERSHOP_ADMIN` bookable aparece naturalmente; admin gestor sem appointments não aparece
-
-#### Busiest Days
-
-```sql
+-- Busiest Days
 SELECT DATE("startTime") as "date",
        COUNT(*)::int as "appointmentCount"
 FROM "Appointment"
@@ -871,11 +914,66 @@ ORDER BY "appointmentCount" DESC
 LIMIT 10
 ```
 
+#### 7.2.3 BARBER — `GET /staff/me/metrics`
+
+Todas as queries scoped por `barberId` (do JWT), sem `barbershopId` explícito.
+
+```sql
+-- Total DONE (count)
+SELECT COUNT(*)::int as "totalDone"
+FROM "Appointment"
+WHERE "barberId" = :barberId
+  AND status = 'DONE'
+  AND "startTime" >= :from
+  AND "startTime" < :to + interval '1 day'
+
+-- Receita gerada
+SELECT COALESCE(SUM("priceAtBooking")::decimal, 0) as "revenue"
+FROM "Appointment"
+WHERE "barberId" = :barberId
+  AND status = 'DONE'
+  AND "startTime" >= :from
+  AND "startTime" < :to + interval '1 day'
+
+-- Top serviços pessoais
+SELECT "serviceName",
+       COUNT(*)::int as "bookingCount",
+       SUM("priceAtBooking")::decimal as "revenue"
+FROM "Appointment"
+WHERE "barberId" = :barberId
+  AND status = 'DONE'
+  AND "startTime" >= :from
+  AND "startTime" < :to + interval '1 day'
+GROUP BY "serviceName"
+ORDER BY "bookingCount" DESC
+LIMIT 5
+
+-- Média de agendamentos por dia no período
+WITH days AS (
+  SELECT GENERATE_SERIES(:from::date, :to::date, '1 day'::interval)::date as day
+)
+SELECT
+  COALESCE(COUNT(a.id)::int, 0) as "totalAppointments",
+  COUNT(DISTINCT d.day)::int as "daysInPeriod",
+  ROUND(
+    COALESCE(COUNT(a.id)::decimal / NULLIF(COUNT(DISTINCT d.day), 0), 0),
+    1
+  ) as "avgPerDay"
+FROM days d
+LEFT JOIN "Appointment" a ON a."barberId" = :barberId
+  AND a.status = 'DONE'
+  AND DATE(a."startTime") = d.day
+  AND a."startTime" >= :from
+  AND a."startTime" < :to + interval '1 day'
+```
+
 ### 7.3 Regras
 
 - **Apenas DONE** conta como receita. BOOKED e CANCELLED são excluídos.
 - Valores usam `priceAtBooking` (snapshot), não preço atual do serviço
-- Acesso exclusivo BARBERSHOP_ADMIN
+- SUPER_ADMIN enxerga agregado de **todas as barbearias**, sem detalhes por tenant
+- BARBERSHOP_ADMIN enxerga apenas sua própria barbearia (`barbershopId` do JWT ou param)
+- BARBER enxerga apenas seus próprios appointments (scoped por `barberId` do JWT)
 - On-the-fly aggregation via Prisma `groupBy` ou raw SQL
 
 ---

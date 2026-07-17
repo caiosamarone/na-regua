@@ -321,13 +321,31 @@ _Pré-requisito: Fase 0 + Fase 1 + Fase 2._
 
 - [ ] **6.1a** — Criar `src/modules/metrics/models/metrics.schema.ts`
 
-### 6.2 Use Case e Controller
+### 6.2 Gateway
 
-- [ ] **6.2a** — `get-metrics.use-case.ts` + controller
+- [ ] **6.2a** — Criar interface `src/modules/metrics/gateways/metrics.repository.ts`
+- [ ] **6.2b** — Criar `src/modules/metrics/gateways/prisma-metrics.repository.ts`
 
-### 6.3 Route
+### 6.3 Use Cases e Controllers
 
-- [ ] **6.3a** — Criar `src/modules/metrics/metrics.routes.ts`
+#### SUPER_ADMIN — Visão Geral
+
+- [ ] **6.3a** — `get-admin-metrics.use-case.ts` + spec
+- [ ] **6.3b** — `get-admin-metrics.controller.ts`
+
+#### BARBERSHOP_ADMIN — Métricas da Barbearia
+
+- [ ] **6.3c** — `get-barbershop-metrics.use-case.ts` + spec
+- [ ] **6.3d** — `get-barbershop-metrics.controller.ts`
+
+#### BARBER — Métricas Pessoais
+
+- [ ] **6.3e** — `get-barber-metrics.use-case.ts` + spec
+- [ ] **6.3f** — `get-barber-metrics.controller.ts`
+
+### 6.4 Route
+
+- [ ] **6.4a** — Criar `src/modules/metrics/metrics.routes.ts`
 
 ---
 
