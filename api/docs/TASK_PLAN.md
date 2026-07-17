@@ -303,8 +303,7 @@ _Pré-requisito: Fase 0 + Fase 1 + Fase 2 + Fase 3 + Fase 4._
 - [x] **5.5e** — `customer-cancel-appointment.use-case.ts` + controller _TESTED_
 - [x] **5.5f** — `staff-list-appointments.use-case.ts` + controller _TESTED_
 - [x] **5.5g** — `staff-get-appointment-detail.use-case.ts` + controller _TESTED_
-- [x] **5.5h** — `staff-cancel-appointment.use-case.ts` + controller
-- [x] **5.5i** — `mark-appointment-done.use-case.ts` + controller
+- [x] **5.5i** — `mark-appointment-done.use-case.ts` + controller _TESTED_
 
 ### 5.6 Route
 
