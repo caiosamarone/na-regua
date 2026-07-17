@@ -330,18 +330,18 @@ _Pré-requisito: Fase 0 + Fase 1 + Fase 2._
 
 #### SUPER_ADMIN — Visão Geral
 
-- [ ] **6.3a** — `get-admin-metrics.use-case.ts` + spec
-- [ ] **6.3b** — `get-admin-metrics.controller.ts`
+- [ ] **6.3a** — `get-admin-metrics.use-case.ts` + spec _TESTED_
+- [ ] **6.3b** — `get-admin-metrics.controller.ts` _TESTED_
 
 #### BARBERSHOP_ADMIN — Métricas da Barbearia
 
-- [ ] **6.3c** — `get-barbershop-metrics.use-case.ts` + spec
-- [ ] **6.3d** — `get-barbershop-metrics.controller.ts`
+- [ ] **6.3c** — `get-barbershop-metrics.use-case.ts` + spec _TESTED_
+- [ ] **6.3d** — `get-barbershop-metrics.controller.ts` _TESTED_
 
 #### BARBER — Métricas Pessoais
 
-- [ ] **6.3e** — `get-barber-metrics.use-case.ts` + spec
-- [ ] **6.3f** — `get-barber-metrics.controller.ts`
+- [ ] **6.3e** — `get-barber-metrics.use-case.ts` + spec _TESTED_
+- [ ] **6.3f** — `get-barber-metrics.controller.ts` _TESTED_
 
 ### 6.4 Route
 
@@ -390,6 +390,6 @@ _Pré-requisito: Fase 0 + Fase 1._
 | 3 — Staff       | 🟢 Completo     |
 | 4 — Service     | 🟢 Completo     |
 | 5 — Booking     | 🟢 Completo     |
-| 6 — Metrics     | 🔴 Não iniciado |
+| 6 — Metrics     | 🟢 Completo     |
 | 7 — File Upload | 🔴 Não iniciado |
 | 8 — Seed        | 🟢 Completo     |

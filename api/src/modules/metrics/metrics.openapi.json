@@ -1,0 +1,282 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Na Régua — Módulo de Métricas (Metrics)",
+    "description": "Endpoints de métricas segmentados por role: SUPER_ADMIN (visão geral), BARBERSHOP_ADMIN (métricas da barbearia) e BARBER (métricas pessoais). Use <<SERVER_URL>> como variável de ambiente no Hoppscotch.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "<<SERVER_URL>>",
+      "description": "Base URL configurada no Hoppscotch"
+    }
+  ],
+  "paths": {
+    "/admin/metrics": {
+      "get": {
+        "summary": "Métricas globais (Super Admin)",
+        "description": "Retorna métricas agregadas de todas as barbearias. Requer token de SUPER_ADMIN.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "date", "example": "2026-07-01" },
+            "description": "Data inicial (YYYY-MM-DD)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "date", "example": "2026-07-31" },
+            "description": "Data final (YYYY-MM-DD)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Métricas globais",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/AdminMetrics" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/barbershops/{id}/metrics": {
+      "get": {
+        "summary": "Métricas da barbearia (Barbershop Admin)",
+        "description": "Retorna métricas detalhadas de uma barbearia. Requer token de BARBERSHOP_ADMIN ou SUPER_ADMIN.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID da barbearia"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "date", "example": "2026-07-01" },
+            "description": "Data inicial (YYYY-MM-DD)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "date", "example": "2026-07-31" },
+            "description": "Data final (YYYY-MM-DD)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Métricas da barbearia",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/BarbershopMetrics" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/staff/me/metrics": {
+      "get": {
+        "summary": "Métricas pessoais (Barber)",
+        "description": "Retorna métricas do barbeiro autenticado. Requer token de BARBER.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "date", "example": "2026-07-01" },
+            "description": "Data inicial (YYYY-MM-DD)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "date", "example": "2026-07-31" },
+            "description": "Data final (YYYY-MM-DD)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Métricas do barbeiro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/BarberMetrics" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "AdminMetrics": {
+        "type": "object",
+        "properties": {
+          "activeBarbershops": { "type": "integer", "description": "Número de barbearias ativas" },
+          "totalRevenue": { "type": "number", "description": "Receita total do período (soma priceAtBooking de DONE)" },
+          "totalDone": { "type": "integer", "description": "Total de agendamentos concluídos" },
+          "totalCancelled": { "type": "integer", "description": "Total de cancelamentos" },
+          "topBarbershops": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "barbershopId": { "type": "string" },
+                "barbershopName": { "type": "string" },
+                "appointmentCount": { "type": "integer" },
+                "revenue": { "type": "number" }
+              }
+            }
+          }
+        }
+      },
+      "BarbershopMetrics": {
+        "type": "object",
+        "properties": {
+          "totalRevenue": { "type": "number", "description": "Receita total da barbearia no período" },
+          "topServices": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "serviceName": { "type": "string" },
+                "bookingCount": { "type": "integer" },
+                "revenue": { "type": "number" }
+              }
+            }
+          },
+          "topBarbers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "barberId": { "type": "string" },
+                "appointmentCount": { "type": "integer" },
+                "revenue": { "type": "number" }
+              }
+            }
+          },
+          "busiestDays": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": { "type": "string", "format": "date" },
+                "appointmentCount": { "type": "integer" }
+              }
+            }
+          }
+        }
+      },
+      "BarberMetrics": {
+        "type": "object",
+        "properties": {
+          "totalDone": { "type": "integer", "description": "Total de agendamentos concluídos pelo barbeiro" },
+          "revenue": { "type": "number", "description": "Receita gerada pelo barbeiro no período" },
+          "topServices": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "serviceName": { "type": "string" },
+                "bookingCount": { "type": "integer" },
+                "revenue": { "type": "number" }
+              }
+            }
+          },
+          "avgPerDay": { "type": "number", "description": "Média de agendamentos por dia no período" }
+        }
+      }
+    },
+    "responses": {
+      "ValidationError": {
+        "description": "Erro de validação (Zod)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Dados inválidos" },
+                "code": { "type": "string", "example": "VALIDATION_ERROR" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Token ausente, inválido ou expirado",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Token inválido ou ausente" },
+                "code": { "type": "string", "example": "UNAUTHORIZED" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Permissão insuficiente",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Permissão insuficiente" },
+                "code": { "type": "string", "example": "FORBIDDEN" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

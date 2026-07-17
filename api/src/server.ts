@@ -12,6 +12,7 @@ import { barbershopRoutes } from "./modules/barbershops/barbershops.routes";
 import { staffRoutes } from "./modules/staff/staff.routes";
 import { serviceRoutes } from "./modules/services/services.routes";
 import { bookingRoutes } from "./modules/booking/booking.routes";
+import { metricsRoutes } from "./modules/metrics/metrics.routes";
 
 const app = Fastify({ logger: true });
 
@@ -33,6 +34,7 @@ app.register(barbershopRoutes);
 app.register(staffRoutes);
 app.register(serviceRoutes);
 app.register(bookingRoutes);
+app.register(metricsRoutes);
 
 app.setErrorHandler((error, request, reply) => {
   if (error instanceof AppError) {
