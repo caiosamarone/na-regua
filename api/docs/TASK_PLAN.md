@@ -357,20 +357,25 @@ _Pré-requisito: Fase 0 + Fase 1._
 
 ### 7.1 Schemas
 
-- [ ] **7.1a** — Criar `src/modules/upload/models/upload.schema.ts`
+- [x] **7.1a** — Criar `src/modules/upload/models/upload.schema.ts`
 
 ### 7.2 Erros
 
-- [ ] **7.2a** — Criar `src/modules/upload/errors/upload-errors.ts`
+- [x] **7.2a** — Criar `src/modules/upload/errors/upload-errors.ts`
 
-### 7.3 Use Cases e Controllers
+### 7.3 Gateway
 
-- [ ] **7.3a** — `upload-barbershop-logo.use-case.ts` + controller
-- [ ] **7.3b** — `upload-staff-avatar.use-case.ts` + controller
+- [x] **7.3a** — Criar `src/modules/upload/gateways/upload.repository.ts`
+- [x] **7.3b** — Criar `src/modules/upload/gateways/prisma-upload.repository.ts`
 
-### 7.4 Route
+### 7.4 Use Cases e Controllers
 
-- [ ] **7.4a** — Criar `src/modules/upload/upload.routes.ts`
+- [x] **7.4a** — `upload-barbershop-logo.use-case.ts` + spec + controller _TESTED_
+- [x] **7.4b** — `upload-staff-avatar.use-case.ts` + spec + controller _TESTED_
+
+### 7.5 Route
+
+- [x] **7.5a** — Criar `src/modules/upload/upload.routes.ts`
 
 ---
 
@@ -382,14 +387,14 @@ _Pré-requisito: Fase 0 + Fase 1._
 
 ## Progresso
 
-| Fase            | Status          |
-| --------------- | --------------- |
-| 0 — Fundação    | 🟢 Completo     |
-| 1 — Auth        | 🟢 Completo     |
-| 2 — Barbershop  | 🟢 Completo     |
-| 3 — Staff       | 🟢 Completo     |
-| 4 — Service     | 🟢 Completo     |
-| 5 — Booking     | 🟢 Completo     |
-| 6 — Metrics     | 🟢 Completo     |
-| 7 — File Upload | 🔴 Não iniciado |
-| 8 — Seed        | 🟢 Completo     |
+| Fase            | Status      |
+| --------------- | ----------- |
+| 0 — Fundação    | 🟢 Completo |
+| 1 — Auth        | 🟢 Completo |
+| 2 — Barbershop  | 🟢 Completo |
+| 3 — Staff       | 🟢 Completo |
+| 4 — Service     | 🟢 Completo |
+| 5 — Booking     | 🟢 Completo |
+| 6 — Metrics     | 🟢 Completo |
+| 7 — File Upload | 🟢 Completo |
+| 8 — Seed        | 🟢 Completo |

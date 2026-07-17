@@ -9,6 +9,9 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().min(1),
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
+  CLOUDINARY_CLOUD_NAME: z.string().min(1),
+  CLOUDINARY_API_KEY: z.string().min(1),
+  CLOUDINARY_API_SECRET: z.string().min(1),
   FRONTEND_URL: z.string().url().default("http://localhost:3000"),
 });
 

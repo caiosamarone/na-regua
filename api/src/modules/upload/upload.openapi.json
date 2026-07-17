@@ -1,0 +1,170 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Na Régua — Módulo de Upload (File Upload)",
+    "description": "Upload de imagens para Cloudinary: logo da barbearia e avatar de staff. Use <<SERVER_URL>> como variável de ambiente no Hoppscotch.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "<<SERVER_URL>>",
+      "description": "Base URL configurada no Hoppscotch"
+    }
+  ],
+  "paths": {
+    "/upload/barbershop-logo": {
+      "post": {
+        "summary": "Upload logo da barbearia",
+        "description": "Faz upload do logo da barbearia para o Cloudinary. Requer token de BARBERSHOP_ADMIN. Enviar multipart/form-data com campo 'file'.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Arquivo de imagem (JPEG, PNG ou WebP, máx 5MB)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "URL do logo no Cloudinary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "url": { "type": "string", "format": "uri", "example": "https://res.cloudinary.com/..." }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/upload/staff-avatar": {
+      "post": {
+        "summary": "Upload avatar de staff",
+        "description": "Faz upload do avatar de um profissional para o Cloudinary. Requer token de BARBERSHOP_ADMIN. Enviar multipart/form-data com campos 'file' e 'staffId'.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Arquivo de imagem (JPEG, PNG ou WebP, máx 5MB)"
+                  },
+                  "staffId": {
+                    "type": "string",
+                    "description": "ID do profissional"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "URL do avatar no Cloudinary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "url": { "type": "string", "format": "uri", "example": "https://res.cloudinary.com/..." }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "responses": {
+      "ValidationError": {
+        "description": "Erro de validação (Zod)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Dados inválidos" },
+                "code": { "type": "string", "example": "VALIDATION_ERROR" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Token ausente, inválido ou expirado",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Token inválido ou ausente" },
+                "code": { "type": "string", "example": "UNAUTHORIZED" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Permissão insuficiente",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Permissão insuficiente" },
+                "code": { "type": "string", "example": "FORBIDDEN" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
