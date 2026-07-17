@@ -97,14 +97,14 @@
           "400": { "$ref": "#/components/responses/ValidationError" },
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "409": {
-            "description": "Conflito (horário já agendado)",
+            "description": "Conflito (horário já agendado / fora do horário)",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "error": { "type": "string", "example": "Horário indisponível" },
-                    "code": { "type": "string", "example": "SLOT_UNAVAILABLE" },
+                    "code": { "type": "string", "example": "INVALID_SLOT" },
                     "details": { "type": "object" }
                   }
                 }
@@ -112,7 +112,9 @@
             }
           }
         }
-      },
+      }
+    },
+    "/customers/me/appointments": {
       "get": {
         "summary": "Listar agendamentos do cliente",
         "description": "Retorna agendamentos do cliente autenticado com paginação. Requer token de cliente.",
@@ -130,14 +132,14 @@
             "in": "query",
             "required": false,
             "schema": { "type": "string", "format": "date-time" },
-            "description": "Filtrar a partir desta data (ISO datetime)"
+            "description": "Filtrar a partir desta data (ISO datetime com offset)"
           },
           {
             "name": "to",
             "in": "query",
             "required": false,
             "schema": { "type": "string", "format": "date-time" },
-            "description": "Filtrar até esta data (ISO datetime)"
+            "description": "Filtrar até esta data (ISO datetime com offset)"
           },
           {
             "name": "page",
@@ -169,8 +171,8 @@
     },
     "/appointments/{id}": {
       "get": {
-        "summary": "Detalhe do agendamento (cliente)",
-        "description": "Retorna detalhes completos de um agendamento do cliente autenticado. Requer token de cliente.",
+        "summary": "Detalhe do agendamento (cliente ou staff)",
+        "description": "Retorna detalhes completos de um agendamento. Se CUSTOMER, só vê os próprios. Se BARBER/BARBERSHOP_ADMIN, vê qualquer um da barbearia.",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
@@ -196,14 +198,15 @@
             }
           },
           "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
           "404": { "$ref": "#/components/responses/NotFound" }
         }
       }
     },
     "/appointments/{id}/cancel": {
       "patch": {
-        "summary": "Cancelar agendamento (cliente)",
-        "description": "Cancela um agendamento do cliente autenticado. Pode retornar warning se houver política de cancelamento. Requer token de cliente.",
+        "summary": "Cancelar agendamento (cliente ou staff)",
+        "description": "Cancela um agendamento. Se role for CUSTOMER, valida lead time. Se for BARBER/BARBERSHOP_ADMIN, cancela sem restrições.",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
@@ -236,7 +239,7 @@
                         {
                           "type": "object",
                           "properties": {
-                            "warning": { "type": "string", "description": "Aviso sobre política de cancelamento" }
+                            "warning": { "type": "string", "description": "Aviso sobre política de cancelamento (apenas clientes)" }
                           }
                         }
                       ]
@@ -248,7 +251,8 @@
           },
           "400": { "$ref": "#/components/responses/ValidationError" },
           "401": { "$ref": "#/components/responses/Unauthorized" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/NotActionable" }
         }
       }
     },
@@ -319,6 +323,42 @@
           },
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/appointments/{id}/done": {
+      "patch": {
+        "summary": "Marcar agendamento como concluído (staff)",
+        "description": "Marca um agendamento BOOKED como DONE. Requer token de BARBER ou BARBERSHOP_ADMIN.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID do agendamento"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agendamento concluído",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/AppointmentItem" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/NotActionable" }
         }
       }
     }
@@ -496,6 +536,21 @@
               "properties": {
                 "error": { "type": "string", "example": "Agendamento não encontrado" },
                 "code": { "type": "string", "example": "APPOINTMENT_NOT_FOUND" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "NotActionable": {
+        "description": "Ação não permitida no estado atual do recurso",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "Agendamento não pode ser cancelado" },
+                "code": { "type": "string", "example": "APPOINTMENT_NOT_BOOKED" },
                 "details": { "type": "object" }
               }
             }

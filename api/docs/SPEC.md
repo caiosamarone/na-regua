@@ -624,17 +624,21 @@ DELETE /staff/:id
 | GET    | `/barbershops/:id/slots`         | No       | `barberId`, `serviceId`, `date`                | Slots disponíveis            |
 | POST   | `/appointments`                  | CUSTOMER | `barbershopId, barberId, serviceId, startTime` | Criar booking                |
 | GET    | `/customers/me/appointments`     | CUSTOMER | `?status=&from=&to=&page=&pageSize=`           | Listar próprios appointments |
-| GET    | `/customers/me/appointments/:id` | CUSTOMER | —                                              | Detalhe appointment          |
 | PATCH  | `/appointments/:id/cancel`       | CUSTOMER | `?reason=`                                     | Cancelar próprio appointment |
 
 #### Staff
 
-| Método | Rota                                | Auth                     | Descrição                                                        |
-| ------ | ----------------------------------- | ------------------------ | ---------------------------------------------------------------- |
-| GET    | `/barbershops/:id/appointments`     | BARBERSHOP_ADMIN, BARBER | Listar appointments (`?date=&barberId=&status=&page=&pageSize=`) |
-| GET    | `/barbershops/:id/appointments/:id` | BARBERSHOP_ADMIN, BARBER | Detalhe                                                          |
-| PATCH  | `/appointments/:id/cancel`          | BARBERSHOP_ADMIN, BARBER | Cancelar (staff)                                                 |
-| PATCH  | `/appointments/:id/done`            | BARBERSHOP_ADMIN, BARBER | Marcar como DONE                                                 |
+| Método | Rota                            | Auth                     | Descrição                                                        |
+| ------ | ------------------------------- | ------------------------ | ---------------------------------------------------------------- |
+| GET    | `/barbershops/:id/appointments` | BARBERSHOP_ADMIN, BARBER | Listar appointments (`?date=&barberId=&status=&page=&pageSize=`) |
+| PATCH  | `/appointments/:id/cancel`      | BARBERSHOP_ADMIN, BARBER | Cancelar (staff, sem lead time)                                  |
+| PATCH  | `/appointments/:id/done`        | BARBERSHOP_ADMIN, BARBER | Marcar como DONE                                                 |
+
+#### Unificadas (CUSTOMER + Staff)
+
+| Método | Rota                   | Auth         | Descrição                                                       |
+| ------ | ---------------------- | ------------ | --------------------------------------------------------------- |
+| GET    | `/appointments/:id`    | JWT (qualquer role) | Detalhe do agendamento — CUSTOMER vê só os próprios; staff vê qualquer um da barbearia (BARBER scoped) |
 
 - Barber só enxerga/atua nos próprios appointments (`barberId = jwt.sub`); Admin vê todos do tenant
 

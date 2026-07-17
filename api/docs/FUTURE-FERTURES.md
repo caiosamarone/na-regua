@@ -25,3 +25,7 @@ Todas essas ideias precisam passar por PRD, ADR, SPEC e TASK_PLAN antes.
 6. Automação para limpar dados "apagáveis"
 
 - o script cleanup ja existe, mas precisamos deixar scheduled 1x por semana
+
+7. Comissão para barbeiro
+
+- Definir uma porcentagem de comissão por barbeiro. O ADMIN da barberia vai ter uma visão no fechamento do mês quanto precisa pagar de comissão.

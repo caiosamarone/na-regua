@@ -1,6 +1,19 @@
 import { InMemoryBarbershopRepository } from "../../../tests/helpers/in-memory-barbershop.repository";
 import { BlockedDatesUseCase } from "./blocked-dates.use-case";
 
+function daysFromNow(days: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function dateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 class MockEmailService {
   sendInvite = jest.fn().mockResolvedValue(undefined);
   sendCancellation = jest.fn().mockResolvedValue(undefined);
@@ -11,14 +24,21 @@ describe("BlockedDatesUseCase", () => {
   let emailService: MockEmailService;
   let useCase: BlockedDatesUseCase;
 
+  const futureDay1 = daysFromNow(1);
+  const futureDay2 = daysFromNow(2);
+
   beforeEach(() => {
     repository = new InMemoryBarbershopRepository();
     emailService = new MockEmailService();
     useCase = new BlockedDatesUseCase(repository, emailService as any);
+
+    jest.useFakeTimers({ advanceTimers: true });
+    jest.setSystemTime(new Date("2026-07-17T12:00:00Z"));
   });
 
   afterEach(() => {
     jest.clearAllMocks();
+    jest.useRealTimers();
     repository.reset();
   });
 
@@ -50,8 +70,8 @@ describe("BlockedDatesUseCase", () => {
       customerId: "cust-1",
       barberId: "stf-1",
       serviceId: "svc-1",
-      startTime: new Date("2026-07-05T10:00:00Z"),
-      endTime: new Date("2026-07-05T10:30:00Z"),
+      startTime: new Date("2026-07-18T10:00:00Z"),
+      endTime: new Date("2026-07-18T10:30:00Z"),
       status: "BOOKED" as const,
       cancelledById: null,
       cancelledByRole: null,
@@ -66,8 +86,8 @@ describe("BlockedDatesUseCase", () => {
       customerId: "cust-2",
       barberId: "stf-1",
       serviceId: "svc-2",
-      startTime: new Date("2026-07-06T14:00:00Z"),
-      endTime: new Date("2026-07-06T14:30:00Z"),
+      startTime: new Date("2026-07-19T14:00:00Z"),
+      endTime: new Date("2026-07-19T14:30:00Z"),
       status: "BOOKED" as const,
       cancelledById: null,
       cancelledByRole: null,
@@ -78,6 +98,9 @@ describe("BlockedDatesUseCase", () => {
     },
   ];
 
+  const blockStart = dateStr(daysFromNow(1));
+  const blockEnd = dateStr(daysFromNow(3));
+
   describe("preview mode", () => {
     it("should return affected appointments in the date range", async () => {
       repository.barbershops.push(defaultBarbershop);
@@ -85,8 +108,8 @@ describe("BlockedDatesUseCase", () => {
 
       const result = await useCase.execute(
         "shop-1",
-        "2026-07-05",
-        "2026-07-07",
+        blockStart,
+        blockEnd,
       );
 
       expect(result).toHaveLength(2);
@@ -101,7 +124,7 @@ describe("BlockedDatesUseCase", () => {
       repository.barbershops.push(defaultBarbershop);
       repository.appointments.push(...defaultAppointments);
 
-      await useCase.execute("shop-1", "2026-07-05", "2026-07-07");
+      await useCase.execute("shop-1", blockStart, blockEnd);
 
       expect(repository.appointments.every((a) => a.status === "BOOKED")).toBe(
         true,
@@ -117,8 +140,8 @@ describe("BlockedDatesUseCase", () => {
 
       const result = await useCase.execute(
         "shop-1",
-        "2026-07-05",
-        "2026-07-07",
+        blockStart,
+        blockEnd,
         "Feriado",
         "admin-id",
         "BARBERSHOP_ADMIN",
@@ -136,14 +159,14 @@ describe("BlockedDatesUseCase", () => {
   describe("common validation", () => {
     it("should throw BarbershopNotFoundError when barbershop does not exist", async () => {
       await expect(
-        useCase.execute("non-existent", "2026-07-05", "2026-07-07"),
+        useCase.execute("non-existent", blockStart, blockEnd),
       ).rejects.toThrow("Barbearia não encontrada");
 
       await expect(
         useCase.execute(
           "non-existent",
-          "2026-07-05",
-          "2026-07-07",
+          blockStart,
+          blockEnd,
           null,
           "admin-id",
           "BARBERSHOP_ADMIN",
