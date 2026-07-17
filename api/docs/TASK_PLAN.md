@@ -198,6 +198,26 @@ _Pré-requisito: Fase 0 + Fase 1._
 
 - [x] **2.6a** — Criar `src/modules/barbershops/barbershops.routes.ts`
 
+### 2.7 Customização da Página da Barbearia
+
+- [ ] **2.7a** — Adicionar campos `primaryColor`, `secondaryColor`, `instagramUrl`, `whatsappUrl`, `facebookUrl` ao modelo `Barbershop` no schema Prisma + migration
+- [ ] **2.7b** — Criar modelo `GalleryImage` no schema Prisma + migration
+- [ ] **2.7c** — Atualizar schema Zod em `barbershop.schema.ts` com novos campos de customização
+- [ ] **2.7d** — Criar `src/modules/barbershops/models/gallery.schema.ts` (Zod para galeria)
+- [ ] **2.7e** — Atualizar `barbershop.repository.ts` com métodos de galeria (CRUD)
+- [ ] **2.7f** — Atualizar `prisma-barbershop.repository.ts` com implementação da galeria
+- [ ] **2.7g** — Atualizar `update-barbershop-profile.use-case.ts` para aceitar cores e redes sociais
+- [ ] **2.7h** — Criar `add-gallery-image.use-case.ts` + controller + spec
+- [ ] **2.7i** — Criar `reorder-gallery.use-case.ts` + controller + spec
+- [ ] **2.7j** — Criar `delete-gallery-image.use-case.ts` + controller + spec
+- [ ] **2.7k** — Atualizar `get-barbershop-profile.use-case.ts` para incluir galeria na resposta pública
+- [ ] **2.7l** — Atualizar `barbershops.routes.ts` com rotas da galeria
+
+### 2.8 Upload — Galeria
+
+- [ ] **2.8a** — Criar `upload-gallery-image.use-case.ts` (reusa validação do módulo upload) + controller + spec
+- [ ] **2.8b** — Registrar rota `POST /upload/gallery-image` em `upload.routes.ts`
+
 ---
 
 ## Fase 3 — Módulo: Staff
@@ -309,6 +329,19 @@ _Pré-requisito: Fase 0 + Fase 1 + Fase 2 + Fase 3 + Fase 4._
 
 - [x] **5.6a** — Criar `src/modules/booking/booking.routes.ts`
 
+### 5.7 TimeOff — Bloqueio Parcial de Agenda
+
+- [ ] **5.7a** — Adicionar modelo `TimeOff` no schema Prisma + migration
+- [ ] **5.7b** — Criar `src/modules/booking/models/time-off.schema.ts` (Zod)
+- [ ] **5.7c** — Criar `src/modules/booking/errors/time-off-errors.ts`
+- [ ] **5.7d** — Estender `src/modules/booking/gateways/appointment.repository.ts` com métodos de TimeOff
+- [ ] **5.7e** — Estender `src/modules/booking/gateways/prisma-appointment.repository.ts` com implementação TimeOff
+- [ ] **5.7f** — `create-time-off.use-case.ts` (preview/confirm) + controller + spec
+- [ ] **5.7g** — `list-time-off.use-case.ts` + controller + spec
+- [ ] **5.7h** — `delete-time-off.use-case.ts` + controller + spec
+- [ ] **5.7i** — Atualizar `get-slots.use-case.ts` para filtrar slots por TimeOff
+- [ ] **5.7j** — Atualizar `booking.routes.ts` com rotas de TimeOff
+
 ---
 
 ## Fase 6 — Módulo: Metrics
@@ -385,6 +418,48 @@ _Pré-requisito: Fase 0 + Fase 1._
 
 ---
 
+## Fase 9 — Módulo: Commission
+
+_Pré-requisito: Fase 0 + Fase 1 + Fase 5._
+
+**Diretório:** `src/modules/commission/`
+
+### 9.0 Schema Prisma
+
+- [ ] **9.0a** — Adicionar `commissionPercent` (Decimal?) ao modelo `StaffMember`
+- [ ] **9.0b** — Criar modelos `CommissionEntry` e `CommissionPayment` no schema
+- [ ] **9.0c** — Rodar `prisma generate` e verificar tipos
+
+### 9.1 Schemas de Validação
+
+- [ ] **9.1a** — Criar `src/modules/commission/models/commission.schema.ts`
+
+### 9.2 Erros
+
+- [ ] **9.2a** — Criar `src/modules/commission/errors/commission-errors.ts`
+
+### 9.3 Gateway
+
+- [ ] **9.3a** — Criar interface `src/modules/commission/gateways/commission.repository.ts`
+- [ ] **9.3b** — Criar `src/modules/commission/gateways/prisma-commission.repository.ts`
+
+### 9.4 Use Cases e Controllers
+
+- [ ] **9.4a** — `create-commission-entry.use-case.ts` (chamado ao marcar DONE) + spec
+- [ ] **9.4b** — `list-barbershop-commissions.use-case.ts` + controller + spec
+- [ ] **9.4c** — `get-barber-commissions.use-case.ts` + controller + spec
+- [ ] **9.4d** — `pay-commissions.use-case.ts` + controller + spec
+
+### 9.5 Route
+
+- [ ] **9.5a** — Criar `src/modules/commission/commission.routes.ts`
+
+### 9.6 Integration
+
+- [ ] **9.6a** — Integrar `create-commission-entry.use-case` no fluxo `mark-appointment-done`
+
+---
+
 ## Progresso
 
 | Fase            | Status      |
@@ -398,3 +473,4 @@ _Pré-requisito: Fase 0 + Fase 1._
 | 6 — Metrics     | 🟢 Completo |
 | 7 — File Upload | 🟢 Completo |
 | 8 — Seed        | 🟢 Completo |
+| 9 — Commission  | ⚪ Planejado |

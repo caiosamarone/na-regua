@@ -1,6 +1,6 @@
 # Na Régua — API Technical Specification
 
-> Gerada a partir das ADRs 001–014. Revisão: 2026-07-02 (v2).
+> Gerada a partir das ADRs 001–017. Revisão: 2026-07-17 (v3).
 > Esta SPEC é o guia de implementação para desenvolvedores.
 > Decisões de arquitetura detalhadas estão nas ADRs correspondentes.
 >
@@ -130,11 +130,12 @@ O projeto adota uma abordagem cirúrgica de testes baseada no melhor custo-benef
 | barbershopId | String?       | FK → Barbershop. Nullable para SUPER_ADMIN   |
 | email        | String        | Unique                                       |
 | passwordHash | String        | bcrypt 10 rounds                             |
-| name         | String        |                                              |
-| role         | Enum          | SUPER_ADMIN, BARBERSHOP_ADMIN, BARBER        |
-| isBookable   | Boolean       | default: BARBER=true, BARBERSHOP_ADMIN=false |
-| isActive     | Boolean       | default true                                 |
-| avatarUrl    | String?       | Cloudinary URL                               |
+| name              | String        |                                              |
+| role              | Enum          | SUPER_ADMIN, BARBERSHOP_ADMIN, BARBER        |
+| isBookable        | Boolean       | default: BARBER=true, BARBERSHOP_ADMIN=false |
+| isActive          | Boolean       | default true                                 |
+| commissionPercent | Decimal?      | Percentual de comissão (ex: 50.00 = 50%). Null = 0% |
+| avatarUrl         | String?       | Cloudinary URL                               |
 | createdAt    | DateTime      |                                              |
 | updatedAt    | DateTime      |                                              |
 
@@ -329,7 +330,18 @@ Error 401: INVITATION_INVALID — token expirado ou já consumido
 | Marcar DONE                        | ❌          | ✅               | ✅     | ❌       |
 | Cancelar appointment (staff)       | ❌          | ✅               | ✅     | ❌       |
 | Cancelar próprio appointment       | ❌          | ❌               | ❌     | ✅       |
-| Bloquear datas                     | ❌          | ✅               | ❌     | ❌       |
+| Bloquear datas (BlockedDate)       | ❌          | ✅               | ❌     | ❌       |
+| Configurar % comissão do staff     | ❌          | ✅               | ❌     | ❌       |
+| Ver comissões pendentes (todos)    | ❌          | ✅               | ❌     | ❌       |
+| Ver própria comissão               | ❌          | ❌               | ✅     | ❌       |
+| Registrar pagamento de comissão    | ❌          | ✅               | ❌     | ❌       |
+| Criar TimeOff (próprio)            | ❌          | ✅               | ✅     | ❌       |
+| Criar TimeOff (para outro staff)   | ❌          | ✅               | ❌     | ❌       |
+| Deletar TimeOff                    | ❌          | ✅               | ✅     | ❌       |
+| Ver TimeOffs (todos staff)         | ❌          | ✅               | ❌     | ❌       |
+| Ver próprio TimeOff                | ❌          | ✅               | ✅     | ❌       |
+| Customizar aparência (cores, redes) | ❌          | ✅               | ❌     | ❌       |
+| Gerenciar galeria de trabalhos     | ❌          | ✅               | ❌     | ❌       |
 
 ---
 
@@ -354,6 +366,11 @@ Error 401: INVITATION_INVALID — token expirado ou já consumido
 | timezone                    | String        | IANA, ex: "America/Sao_Paulo"    |
 | phone                       | String?       |                                  |
 | logoUrl                     | String?       | Cloudinary URL                   |
+| primaryColor                | String?       | Hex color (ex: "#1a1a2e")       |
+| secondaryColor              | String?       | Hex color (ex: "#e94560")       |
+| instagramUrl                | String?       | Link do Instagram                |
+| whatsappUrl                 | String?       | Link do WhatsApp                 |
+| facebookUrl                 | String?       | Link do Facebook                 |
 | slotIntervalMinutes         | Int           | Default 30                       |
 | cancellationLeadTimeMinutes | Int           | Default 180 (3h)                 |
 | active                      | Boolean       | Default false. Super Admin ativa |
@@ -382,6 +399,17 @@ Split shifts: um `dayOfWeek` pode ter múltiplos registros. Ex: (1, "09:00", "12
 | endDate      | DateTime      | Whole-day, meia-noite local |
 | reason       | String?       | Ex: "Reforma", "Feriado"    |
 
+#### GalleryImage
+
+| Campo        | Tipo          | Notas                             |
+| ------------ | ------------- | --------------------------------- |
+| id           | String (CUID) | PK                                |
+| barbershopId | String        | FK → Barbershop                   |
+| imageUrl     | String        | Cloudinary URL                    |
+| caption      | String?       | Legenda opcional (ex: "Corte degradê") |
+| sortOrder    | Int           | Ordem de exibição (0-based)       |
+| createdAt    | DateTime      |                                   |
+
 ### 3.2 Endpoints
 
 #### Públicos (sem auth)
@@ -404,12 +432,16 @@ Split shifts: um `dayOfWeek` pode ter múltiplos registros. Ex: (1, "09:00", "12
 
 | Método | Rota                                            | Auth             | Descrição                                    |
 | ------ | ----------------------------------------------- | ---------------- | -------------------------------------------- |
-| PATCH  | `/barbershops/:id/profile`                      | BARBERSHOP_ADMIN | Editar nome, endereço, timezone, phone       |
+| PATCH  | `/barbershops/:id/profile`                      | BARBERSHOP_ADMIN | Editar nome, endereço, timezone, phone, cores, redes sociais |
 | POST   | `/barbershops/:id/logo`                         | BARBERSHOP_ADMIN | Upload logo (multipart)                      |
 | GET    | `/barbershops/:id/operating-hours`              | BARBERSHOP_ADMIN | Listar grade atual                           |
 | PUT    | `/barbershops/:id/operating-hours`              | BARBERSHOP_ADMIN | **Substituir** grade completa (array)        |
 | POST   | `/barbershops/:id/blocked-dates`                | BARBERSHOP_ADMIN | Criar blocked date range (preview + confirm) |
 | DELETE | `/barbershops/:id/blocked-dates/:blockedDateId` | BARBERSHOP_ADMIN | Remover blocked date                         |
+| GET    | `/barbershops/:id/gallery`                      | No               | Listar imagens da galeria (ordenadas)        |
+| POST   | `/barbershops/:id/gallery`                      | BARBERSHOP_ADMIN | Adicionar imagem na galeria                  |
+| PUT    | `/barbershops/:id/gallery/reorder`              | BARBERSHOP_ADMIN | Reordenar galeria (array de IDs)             |
+| DELETE | `/barbershops/:id/gallery/:imageId`             | BARBERSHOP_ADMIN | Remover imagem da galeria                    |
 
 #### PUT /operating-hours — Regras
 
@@ -805,6 +837,89 @@ PATCH /appointments/:id/cancel (BARBER | BARBERSHOP_ADMIN)
 
 - Slot é imediatamente disponível para re-booking (sem cool-down)
 
+### 6.7 TimeOff — Bloqueio Parcial de Agenda do Staff
+
+Entidade para staff bloquear horários específicos na própria agenda, distinto do `BlockedDate` que bloqueia dias inteiros para toda a barbearia.
+
+#### 6.7.1 Entidade
+
+| Campo         | Tipo                   | Notas                                            |
+| ------------- | ---------------------- | ------------------------------------------------ |
+| id            | String (CUID)          | PK                                               |
+| barbershopId  | String                 | FK → Barbershop                                  |
+| staffMemberId | String                 | FK → StaffMember                                 |
+| startDate     | DateTime               | Local date (meia-noite local) — primeira data    |
+| endDate       | DateTime               | Local date (meia-noite local) — última data      |
+| startTime     | String?                | "HH:mm" local — null = bloqueio dia inteiro      |
+| endTime       | String?                | "HH:mm" local — null = bloqueio dia inteiro      |
+
+- Ambos null → range de dias inteiros
+- Ambos setados → intervalo de horário aplicado a cada dia do range
+- Se `startDate == endDate` com horários → bloqueio parcial num único dia
+
+#### 6.7.2 Endpoints
+
+| Método | Rota                                                  | Auth             | Descrição                          |
+| ------ | ----------------------------------------------------- | ---------------- | ---------------------------------- |
+| POST   | `/staff/me/time-off`                                  | BARBER           | Criar próprio TimeOff (preview/confirm) |
+| GET    | `/staff/me/time-off`                                  | BARBER           | Listar próprios TimeOffs           |
+| DELETE | `/staff/me/time-off/:id`                              | BARBER           | Remover próprio TimeOff            |
+| POST   | `/barbershops/:id/staff/:staffId/time-off`            | BARBERSHOP_ADMIN | Criar TimeOff para qualquer staff  |
+| GET    | `/barbershops/:id/time-off`                           | BARBERSHOP_ADMIN | Listar todos TimeOffs da barbearia |
+| DELETE | `/barbershops/:id/time-off/:id`                       | BARBERSHOP_ADMIN | Remover qualquer TimeOff           |
+
+#### 6.7.3 Preview + Confirm (igual BlockedDate)
+
+**Etapa 1 — Preview** (`confirm` ausente ou `false`): calcula appointments BOOKED afetados sem persistir.
+
+```json
+POST /staff/me/time-off?confirm=false
+Body: { startDate, endDate, startTime?, endTime? }
+{
+  "data": {
+    "preview": true,
+    "affectedAppointments": [
+      { "id": "...", "customerId": "...", "startTime": "...", "serviceName": "..." }
+    ]
+  }
+}
+```
+
+**Etapa 2 — Confirm** (`?confirm=true`): cria o TimeOff e cancela appointments afetados numa transação.
+
+```json
+{
+  "data": {
+    "timeOff": { "id": "...", "startDate": "...", "endDate": "...", "startTime": "...", "endTime": "..." },
+    "cancelledCount": 2
+  }
+}
+```
+
+#### 6.7.4 Impacto no Slot Calculation
+
+Antes de retornar slots disponíveis, o algoritmo deve filtrar:
+
+```
+Para cada slot candidato (em local time):
+  → Verificar se o barbeiro tem TimeOff ativo no período:
+    - Slot.date ∈ [TimeOff.startDate, TimeOff.endDate]
+    - Se startTime/endTime são null → bloquear dia inteiro
+    - Se startTime/endTime setados → bloquear se slot local ∈ [startTime, endTime)
+  → Se ativo → excluir slot
+```
+
+#### 6.7.5 Role Matrix
+
+| Ação                            | BARBER | BARBERSHOP_ADMIN |
+| ------------------------------- | ------ | ---------------- |
+| Criar TimeOff (próprio)        | ✅     | ✅               |
+| Criar TimeOff (para outro)     | ❌     | ✅               |
+| Ver TimeOffs (todos staff)     | ❌     | ✅               |
+| Ver próprios TimeOffs          | ✅     | ✅               |
+| Deletar próprio TimeOff        | ✅     | ✅               |
+| Deletar TimeOff de outro       | ❌     | ✅               |
+
 ---
 
 ## 7. Módulo: Metrics
@@ -992,6 +1107,7 @@ Frontend (multipart/form-data) → API → valida tipo/tamanho → Cloudinary SD
 | ------ | ------------------------- | ---------------- | ------------------------ |
 | POST   | `/upload/barbershop-logo` | BARBERSHOP_ADMIN | Upload logo da barbearia |
 | POST   | `/upload/staff-avatar`    | BARBERSHOP_ADMIN | Upload avatar de staff   |
+| POST   | `/upload/gallery-image`   | BARBERSHOP_ADMIN | Upload imagem para galeria |
 
 ### 8.3 Validação
 
@@ -1013,8 +1129,132 @@ if (file.size > MAX_SIZE) throw new AppError(400, "FILE_TOO_LARGE");
 - Salvar URL no BD: `Barbershop.logoUrl` ou `StaffMember.avatarUrl`
 
 ---
+## 9. Módulo: Commission
 
-## 9. Apêndices
+### 9.1 Entidades
+
+#### CommissionEntry
+
+| Campo              | Tipo                   | Notas                                        |
+| ------------------ | ---------------------- | -------------------------------------------- |
+| id                 | String (CUID)          | PK                                           |
+| barbershopId       | String                 | FK → Barbershop                              |
+| staffMemberId      | String                 | FK → StaffMember                             |
+| appointmentId      | String                 | FK → Appointment (unique)                    |
+| commissionPercent  | Decimal                | Snapshot da % na hora do cálculo             |
+| priceAtBooking     | Decimal                | Snapshot do valor do serviço                 |
+| amount             | Decimal                | Valor calculado (priceAtBooking * % / 100)   |
+| status             | Enum                   | PENDING, PAID                                |
+| paidAt             | DateTime?              | Preenchido quando pago                       |
+| createdAt          | DateTime               |                                              |
+| updatedAt          | DateTime               |                                              |
+
+#### CommissionPayment
+
+| Campo          | Tipo                   | Notas                                        |
+| -------------- | ---------------------- | -------------------------------------------- |
+| id             | String (CUID)          | PK                                           |
+| barbershopId   | String                 | FK → Barbershop                              |
+| staffMemberId  | String?                | Null = pagamento em lote (todos barbeiros)   |
+| amount         | Decimal                | Valor total pago                             |
+| notes          | String?                | Observação opcional do admin                 |
+| entries        | CommissionEntry[]      | Relação de entries pagas                     |
+| paidAt         | DateTime               |                                              |
+| createdAt      | DateTime               |                                              |
+
+### 9.2 Fluxo de Cálculo
+
+```
+Appointment marcado como DONE
+  → Buscar commissionPercent do staffMember
+  → Se null ou 0 → não gera CommissionEntry
+  → Se > 0 → calcular amount = priceAtBooking * (commissionPercent / 100)
+  → Criar CommissionEntry com status PENDING
+```
+
+### 9.3 Endpoints
+
+| Método | Rota                                        | Auth             | Descrição                                      |
+| ------ | ------------------------------------------- | ---------------- | ---------------------------------------------- |
+| GET    | `/barbershops/:id/commissions`              | BARBERSHOP_ADMIN | Listar comissões (filtro: barberId, status, período) |
+| GET    | `/staff/me/commissions`                     | BARBER           | Próprias comissões (total gerado + pendente)   |
+| POST   | `/barbershops/:id/commissions/pay`          | BARBERSHOP_ADMIN | Pagar comissões (body: { staffMemberId } ou bulk) |
+
+#### GET /barbershops/:id/commissions
+
+```json
+// Response
+{
+  "data": {
+    "barbers": [
+      {
+        "staffMemberId": "...",
+        "name": "João",
+        "commissionPercent": 50.00,
+        "pendingAmount": 1200.00,
+        "paidThisMonth": 800.00,
+        "pendingEntries": 12,
+        "paidEntriesThisMonth": 6
+      }
+    ]
+  }
+}
+```
+
+Query params: `?barberId=&status=PENDING&from=&to=&page=&pageSize=`
+
+#### GET /staff/me/commissions
+
+```json
+// Response
+{
+  "data": {
+    "commissionPercent": 50.00,
+    "totalGenerated": 5200.00,
+    "pendingAmount": 1200.00,
+    "paidAmount": 4000.00,
+    "entries": [
+      {
+        "id": "...",
+        "appointmentId": "...",
+        "serviceName": "Corte",
+        "amount": 30.00,
+        "status": "PENDING",
+        "createdAt": "..."
+      }
+    ]
+  }
+}
+```
+
+#### POST /barbershops/:id/commissions/pay
+
+```json
+// Pagar barbeiro específico
+{ "staffMemberId": "abc123", "note": "Acerto da semana" }
+
+// Pagar todos pendentes
+{ "payAll": true, "note": "Fechamento mensal" }
+```
+
+### 9.4 Regras
+
+- CommissionEntry é gerada automaticamente ao marcar DONE (transação atômica)
+- Cada appointment gera no máximo uma CommissionEntry (unique constraint em `appointmentId`)
+- Só é possível pagar entries com status PENDING
+- O pagamento é apenas um registro contábil — dinheiro não passa pela plataforma
+- Alterar `commissionPercent` do staff não afeta entries já calculadas (snapshot)
+
+### 9.5 Error Codes
+
+| HTTP | Code                          | Quando                                       |
+| ---- | ----------------------------- | -------------------------------------------- |
+| 409  | `COMMISSION_ALREADY_PAID`     | Tentativa de pagar entry já PAID             |
+| 409  | `COMMISSION_ALREADY_EXISTS`   | Tentativa de calcular comissão para appointment já processado |
+
+
+
+## 10. Apêndices
 
 ### A. Error Codes
 
@@ -1034,6 +1274,8 @@ if (file.size > MAX_SIZE) throw new AppError(400, "FILE_TOO_LARGE");
 | 409  | `APPOINTMENT_NOT_ACTIONABLE`  | Cancel/done em appointment não-BOOKED (estado terminal)  |
 | 409  | `EMAIL_ALREADY_EXISTS`        | Email duplicado (staff ou customer)                      |
 | 409  | `STAFF_HAS_FUTURE_BOOKINGS`   | Tentativa de desativar staff com appointments futuros    |
+| 409  | `COMMISSION_ALREADY_PAID`     | Tentativa de pagar entry de comissão já PAID             |
+| 409  | `COMMISSION_ALREADY_EXISTS`   | Tentativa de calcular comissão para appointment já processado |
 | 429  | `RATE_LIMIT_EXCEEDED`         | Rate limit atingido                                      |
 | 500  | `INTERNAL_ERROR`              | Erro inesperado (mensagem suprimida em produção)         |
 
@@ -1080,8 +1322,9 @@ Habilitar no Neon via dashboard SQL editor ou migration Prisma `CREATE EXTENSION
 | `CLOUDINARY_URL`       | Sim         | Credenciais do Cloudinary                    |
 
 ---
+---
 
-## 10. Regras de Ouro ao Desenvolver (Quality Gate)
+## 11. Regras de Ouro ao Desenvolver (Quality Gate)
 
 Antes de abrir qualquer Pull Request ou considerar uma feature concluída, o desenvolvedor deve garantir que:
 
