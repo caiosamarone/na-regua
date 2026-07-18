@@ -15,7 +15,7 @@ export class InviteStaffController {
   async handle(request: FastifyRequest, reply: FastifyReply) {
     const barbershopId = getBarbershopIdFromToken(request);
     const input = inviteStaffInputSchema.parse(request.body);
-    const result = await useCase.execute(barbershopId, input.email, input.name, input.role);
+    const result = await useCase.execute(barbershopId, input.email, input.name, input.role, input.commissionPercent);
     return reply.code(201).send({ data: result });
   }
 }

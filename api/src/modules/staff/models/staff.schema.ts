@@ -8,6 +8,7 @@ export const staffMemberSchema = z.object({
   isBookable: z.boolean(),
   isActive: z.boolean(),
   avatarUrl: z.string().nullable(),
+  commissionPercent: z.number().nullable(),
   createdAt: z.date().transform((d) => d.toISOString()),
   updatedAt: z.date().transform((d) => d.toISOString()),
 });
@@ -20,6 +21,7 @@ export const inviteStaffInputSchema = z.object({
   email: z.string().email(),
   name: z.string().min(1).max(100),
   role: z.enum(["BARBERSHOP_ADMIN", "BARBER"]),
+  commissionPercent: z.number().min(0).max(100).optional(),
 });
 
 export const updateStaffInputSchema = z.object({
@@ -27,6 +29,7 @@ export const updateStaffInputSchema = z.object({
   role: z.enum(["BARBERSHOP_ADMIN", "BARBER"]).optional(),
   isBookable: z.boolean().optional(),
   isActive: z.boolean().optional(),
+  commissionPercent: z.number().min(0).max(100).nullable().optional(),
 });
 
 export const listStaffResponseSchema = z.object({

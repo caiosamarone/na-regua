@@ -13,6 +13,7 @@ export type UpdateStaffInput = {
   role?: StaffRole;
   isBookable?: boolean;
   isActive?: boolean;
+  commissionPercent?: number | null;
 };
 
 export interface StaffRepository {

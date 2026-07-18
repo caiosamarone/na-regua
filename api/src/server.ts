@@ -14,6 +14,7 @@ import { serviceRoutes } from "./modules/services/services.routes";
 import { bookingRoutes } from "./modules/booking/booking.routes";
 import { metricsRoutes } from "./modules/metrics/metrics.routes";
 import { uploadRoutes } from "./modules/upload/upload.routes";
+import { commissionRoutes } from "./modules/commission/commission.routes";
 
 const app = Fastify({ logger: true });
 
@@ -37,6 +38,7 @@ app.register(serviceRoutes);
 app.register(bookingRoutes);
 app.register(metricsRoutes);
 app.register(uploadRoutes);
+app.register(commissionRoutes);
 
 app.setErrorHandler((error, request, reply) => {
   if (error instanceof AppError) {

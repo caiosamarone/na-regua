@@ -23,6 +23,7 @@ export class UpdateStaffController {
           role: result.role,
           isBookable: result.isBookable,
           isActive: result.isActive,
+          commissionPercent: result.commissionPercent ? Number(result.commissionPercent) : null,
         },
       });
   }

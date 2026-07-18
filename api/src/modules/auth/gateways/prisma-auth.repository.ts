@@ -101,9 +101,10 @@ export class PrismaAuthRepository implements AuthRepository {
     role: InvitationRole,
     tokenHash: string,
     expiresAt: Date,
+    commissionPercent?: number,
   ) {
     await prisma.invitationToken.create({
-      data: { email, barbershopId, role, tokenHash, expiresAt },
+      data: { email, barbershopId, role, tokenHash, expiresAt, commissionPercent },
     });
   }
 
@@ -122,6 +123,7 @@ export class PrismaAuthRepository implements AuthRepository {
       email: token.email,
       barbershopId: token.barbershopId,
       role: token.role,
+      commissionPercent: token.commissionPercent ? Number(token.commissionPercent) : null,
     };
   }
 
@@ -163,7 +165,13 @@ export class PrismaAuthRepository implements AuthRepository {
     passwordHash: string;
     barbershopId: string;
     role: InvitationRole;
+    commissionPercent?: number | null;
   }) {
-    return prisma.staffMember.create({ data: input });
+    const { commissionPercent, ...rest } = input;
+    return prisma.staffMember.create({
+      data: commissionPercent != null
+        ? { ...rest, commissionPercent }
+        : rest,
+    });
   }
 }

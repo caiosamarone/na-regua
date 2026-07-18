@@ -43,11 +43,13 @@ export interface AuthRepository {
     role: InvitationRole,
     tokenHash: string,
     expiresAt: Date,
+    commissionPercent?: number,
   ): Promise<void>;
   consumeInvitationToken(tokenHash: string): Promise<{
     email: string;
     barbershopId: string;
     role: InvitationRole;
+    commissionPercent?: number | null;
   } | null>;
   createCustomer(input: {
     email: string;
@@ -63,5 +65,6 @@ export interface AuthRepository {
     passwordHash: string;
     barbershopId: string;
     role: InvitationRole;
+    commissionPercent?: number | null;
   }): Promise<StaffMember>;
 }

@@ -24,6 +24,7 @@ export class AcceptInviteUseCase {
       passwordHash,
       barbershopId: invitation.barbershopId,
       role: invitation.role,
+      commissionPercent: invitation.commissionPercent,
     });
   }
 }

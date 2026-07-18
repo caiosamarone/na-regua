@@ -426,37 +426,37 @@ _Pré-requisito: Fase 0 + Fase 1 + Fase 5._
 
 ### 9.0 Schema Prisma
 
-- [ ] **9.0a** — Adicionar `commissionPercent` (Decimal?) ao modelo `StaffMember`
-- [ ] **9.0b** — Criar modelos `CommissionEntry` e `CommissionPayment` no schema
-- [ ] **9.0c** — Rodar `prisma generate` e verificar tipos
+- [x] **9.0a** — Adicionar `commissionPercent` (Decimal?) ao modelo `StaffMember`
+- [x] **9.0b** — Criar modelos `CommissionEntry` e `CommissionPayment` no schema
+- [x] **9.0c** — Rodar `prisma generate` e verificar tipos
 
 ### 9.1 Schemas de Validação
 
-- [ ] **9.1a** — Criar `src/modules/commission/models/commission.schema.ts`
+- [x] **9.1a** — Criar `src/modules/commission/models/commission.schema.ts`
 
 ### 9.2 Erros
 
-- [ ] **9.2a** — Criar `src/modules/commission/errors/commission-errors.ts`
+- [x] **9.2a** — Criar `src/modules/commission/errors/commission-errors.ts`
 
 ### 9.3 Gateway
 
-- [ ] **9.3a** — Criar interface `src/modules/commission/gateways/commission.repository.ts`
-- [ ] **9.3b** — Criar `src/modules/commission/gateways/prisma-commission.repository.ts`
+- [x] **9.3a** — Criar interface `src/modules/commission/gateways/commission.repository.ts`
+- [x] **9.3b** — Criar `src/modules/commission/gateways/prisma-commission.repository.ts`
 
 ### 9.4 Use Cases e Controllers
 
-- [ ] **9.4a** — `create-commission-entry.use-case.ts` (chamado ao marcar DONE) + spec
-- [ ] **9.4b** — `list-barbershop-commissions.use-case.ts` + controller + spec
-- [ ] **9.4c** — `get-barber-commissions.use-case.ts` + controller + spec
-- [ ] **9.4d** — `pay-commissions.use-case.ts` + controller + spec
+- [x] **9.4a** — `create-commission-entry.use-case.ts` + spec _TESTED_
+- [x] **9.4b** — `list-barbershop-commissions.use-case.ts` + controller + spec _TESTED_
+- [x] **9.4c** — `get-barber-commissions.use-case.ts` + controller + spec _TESTED_
+- [x] **9.4d** — `pay-commissions.use-case.ts` + controller + spec _TESTED_
 
 ### 9.5 Route
 
-- [ ] **9.5a** — Criar `src/modules/commission/commission.routes.ts`
+- [x] **9.5a** — Criar `src/modules/commission/commission.routes.ts`
 
 ### 9.6 Integration
 
-- [ ] **9.6a** — Integrar `create-commission-entry.use-case` no fluxo `mark-appointment-done`
+- [x] **9.6a** — Integrar `create-commission-entry.use-case` no fluxo `mark-appointment-done`
 
 ---
 
@@ -473,4 +473,4 @@ _Pré-requisito: Fase 0 + Fase 1 + Fase 5._
 | 6 — Metrics     | 🟢 Completo |
 | 7 — File Upload | 🟢 Completo |
 | 8 — Seed        | 🟢 Completo |
-| 9 — Commission  | ⚪ Planejado |
+| 9 — Commission  | 🟢 Completo |

@@ -13,7 +13,13 @@ export class InviteStaffUseCase {
     private emailService: EmailService,
   ) {}
 
-  async execute(barbershopId: string, email: string, name: string, role: "BARBERSHOP_ADMIN" | "BARBER") {
+  async execute(
+    barbershopId: string,
+    email: string,
+    name: string,
+    role: "BARBERSHOP_ADMIN" | "BARBER",
+    commissionPercent?: number,
+  ) {
     const existing = await this.staffRepository.findByEmail(email);
     if (existing) throw new StaffEmailAlreadyExistsError();
 
@@ -21,7 +27,7 @@ export class InviteStaffUseCase {
     const tokenHash = hashToken(rawToken);
     const expiresAt = new Date(Date.now() + INVITE_TOKEN_TTL_MS);
 
-    await this.authRepository.createInvitationToken(email, barbershopId, role, tokenHash, expiresAt);
+    await this.authRepository.createInvitationToken(email, barbershopId, role, tokenHash, expiresAt, commissionPercent);
 
     const inviteLink = `${process.env.WEBAPP_URL || "http://localhost:3000"}/accept-invite?token=${rawToken}`;
     await this.emailService.sendInvite(email, inviteLink);

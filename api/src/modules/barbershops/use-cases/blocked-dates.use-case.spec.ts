@@ -24,8 +24,8 @@ describe("BlockedDatesUseCase", () => {
   let emailService: MockEmailService;
   let useCase: BlockedDatesUseCase;
 
-  const futureDay1 = daysFromNow(1);
-  const futureDay2 = daysFromNow(2);
+  let blockStart: string;
+  let blockEnd: string;
 
   beforeEach(() => {
     repository = new InMemoryBarbershopRepository();
@@ -34,6 +34,9 @@ describe("BlockedDatesUseCase", () => {
 
     jest.useFakeTimers({ advanceTimers: true });
     jest.setSystemTime(new Date("2026-07-17T12:00:00Z"));
+
+    blockStart = dateStr(daysFromNow(1));
+    blockEnd = dateStr(daysFromNow(3));
   });
 
   afterEach(() => {
@@ -97,9 +100,6 @@ describe("BlockedDatesUseCase", () => {
       service: { name: "Barba" },
     },
   ];
-
-  const blockStart = dateStr(daysFromNow(1));
-  const blockEnd = dateStr(daysFromNow(3));
 
   describe("preview mode", () => {
     it("should return affected appointments in the date range", async () => {
