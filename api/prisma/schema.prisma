@@ -40,6 +40,7 @@ model Barbershop {
   invitationTokens   InvitationToken[]
   commissionEntries        CommissionEntry[]
   commissionPayments       CommissionPayment[]
+  timeOff                  TimeOff[]
   primaryColor             String?
   secondaryColor           String?
   instagramUrl             String?
@@ -87,8 +88,9 @@ model StaffMember {
   refreshTokens     RefreshToken[]
   appointments      Appointment[]      @relation("StaffAppointments")
   otpTokens         OtpToken[]
-  commissionEntries CommissionEntry[]
+  commissionEntries  CommissionEntry[]
   commissionPayments CommissionPayment[]
+  timeOff            TimeOff[]
 }
 
 model Customer {
@@ -247,6 +249,21 @@ model GalleryImage {
   createdAt    DateTime @default(now())
 
   barbershop Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+}
+
+model TimeOff {
+  id            String   @id @default(cuid())
+  barbershopId  String
+  staffMemberId String
+  startDate     DateTime
+  endDate       DateTime
+  startTime     String?
+  endTime       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  staffMember StaffMember @relation(fields: [staffMemberId], references: [id])
+  barbershop  Barbershop  @relation(fields: [barbershopId], references: [id])
 }
 
 enum StaffRole {

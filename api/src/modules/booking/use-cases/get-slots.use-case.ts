@@ -1,3 +1,4 @@
+import { fromZonedTime } from "date-fns-tz";
 import { AppointmentRepository } from "../gateways/appointment.repository";
 import { calculateSlots } from "../helpers/slot-math.helper";
 import { InvalidSlotError, BarbershopNotActiveError } from "../errors/booking-errors";
@@ -25,9 +26,16 @@ export class GetSlotsUseCase {
 
     const startOfDayUtc = new Date(`${dateStr}T00:00:00Z`);
     const endOfDayUtc = new Date(`${dateStr}T23:59:59Z`);
+
     const booked = barberId
       ? await this.appointmentRepository.findBookedInRange(barberId, startOfDayUtc, endOfDayUtc)
       : [];
+
+    const timeOffBlocks = barberId
+      ? await this.getTimeOffBlocks(barberId, dateStr, barbershop.timezone, startOfDayUtc, endOfDayUtc)
+      : [];
+
+    if (timeOffBlocks.some((b) => b === "FULL_DAY")) return [];
 
     return calculateSlots(
       dateStr,
@@ -35,7 +43,32 @@ export class GetSlotsUseCase {
       intervals.map((i) => ({ startTime: i.startTime, endTime: i.endTime })),
       service.durationMinutes,
       barbershop.slotIntervalMinutes,
-      booked.map((a) => ({ startTime: a.startTime, endTime: a.endTime })),
+      [...booked.map((a) => ({ startTime: a.startTime, endTime: a.endTime })), ...timeOffBlocks.filter((b) => b !== "FULL_DAY") as { startTime: Date; endTime: Date }[]],
     );
+  }
+
+  private async getTimeOffBlocks(
+    barberId: string,
+    dateStr: string,
+    timezone: string,
+    startOfDayUtc: Date,
+    endOfDayUtc: Date,
+  ): Promise<({ startTime: Date; endTime: Date } | "FULL_DAY")[]> {
+    const timeOffs = await this.appointmentRepository.findTimeOffInRange(barberId, startOfDayUtc, endOfDayUtc);
+    if (timeOffs.length === 0) return [];
+
+    const blocks: ({ startTime: Date; endTime: Date } | "FULL_DAY")[] = [];
+
+    for (const to of timeOffs) {
+      if (!to.startTime || !to.endTime) {
+        return ["FULL_DAY"];
+      }
+      blocks.push({
+        startTime: fromZonedTime(`${dateStr}T${to.startTime}:00`, timezone),
+        endTime: fromZonedTime(`${dateStr}T${to.endTime}:00`, timezone),
+      });
+    }
+
+    return blocks;
   }
 }

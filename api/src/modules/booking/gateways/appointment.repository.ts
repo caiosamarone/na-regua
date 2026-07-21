@@ -6,6 +6,7 @@ import type {
   Barbershop,
   OperatingHour,
   BlockedDate,
+  TimeOff,
 } from "../../../generated/prisma/client";
 
 export type AppointmentWithRelations = Appointment & {
@@ -55,4 +56,5 @@ export interface AppointmentRepository {
   findStaffById(id: string): Promise<StaffProfile | null>;
   findOperatingHours(barbershopId: string, dayOfWeek: number): Promise<OperatingHour[]>;
   findBlockedDates(barbershopId: string, date: Date): Promise<BlockedDate[]>;
+  findTimeOffInRange(staffMemberId: string, startDate: Date, endDate: Date): Promise<TimeOff[]>;
 }

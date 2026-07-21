@@ -173,4 +173,14 @@ export class PrismaAppointmentRepository implements AppointmentRepository {
       },
     }) as any;
   }
+
+  async findTimeOffInRange(staffMemberId: string, startDate: Date, endDate: Date) {
+    return prisma.timeOff.findMany({
+      where: {
+        staffMemberId,
+        startDate: { lte: endDate },
+        endDate: { gte: startDate },
+      },
+    });
+  }
 }

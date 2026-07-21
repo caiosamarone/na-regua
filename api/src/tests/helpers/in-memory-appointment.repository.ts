@@ -6,6 +6,7 @@ import type {
   Customer,
   OperatingHour,
   BlockedDate,
+  TimeOff,
 } from "../../generated/prisma/client";
 import type {
   AppointmentRepository,
@@ -27,6 +28,7 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
   staffMembers: StaffMember[] = [];
   operatingHours: OperatingHour[] = [];
   blockedDates: BlockedDate[] = [];
+  timeOffs: TimeOff[] = [];
 
   reset() {
     this.appointments = [];
@@ -206,5 +208,14 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
         new Date(bd.startDate) <= date &&
         new Date(bd.endDate) >= date,
     ) as any;
+  }
+
+  async findTimeOffInRange(staffMemberId: string, startDate: Date, endDate: Date) {
+    return this.timeOffs.filter(
+      (t) =>
+        t.staffMemberId === staffMemberId &&
+        t.startDate <= endDate &&
+        t.endDate >= startDate,
+    );
   }
 }
