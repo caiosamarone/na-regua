@@ -183,4 +183,11 @@ export class PrismaAppointmentRepository implements AppointmentRepository {
       },
     });
   }
+
+  async updateNotifiedAt(id: string): Promise<void> {
+    await prisma.appointment.update({
+      where: { id },
+      data: { notifiedAt: new Date() },
+    });
+  }
 }

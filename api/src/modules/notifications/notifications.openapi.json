@@ -1,0 +1,194 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Na Régua — Módulo de Notificações Push",
+    "description": "Endpoints para gerenciamento de inscrições push (Web Push API) e lembrete de agendamentos. Use <<SERVER_URL>> como variável de ambiente no Hoppscotch.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "<<SERVER_URL>>",
+      "description": "Base URL configurada no Hoppscotch"
+    }
+  ],
+  "paths": {
+    "/vapid-public-key": {
+      "get": {
+        "summary": "Obter chave pública VAPID",
+        "description": "Retorna a chave pública VAPID para o frontend registrar push subscriptions no browser.",
+        "responses": {
+          "200": {
+            "description": "Chave pública VAPID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "publicKey": {
+                      "type": "string",
+                      "description": "VAPID public key para PushManager.subscribe()"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/push/subscriptions": {
+      "post": {
+        "summary": "Registrar inscrição push",
+        "description": "Armazena uma subscription do browser (PushSubscription) para o cliente autenticado. Se o mesmo endpoint já estiver registrado, retorna a subscription existente.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSubscriptionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Inscrição criada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SubscriptionResponse"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Inscrição já existente (mesmo endpoint)"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/push/subscriptions/{id}": {
+      "delete": {
+        "summary": "Remover inscrição push",
+        "description": "Remove uma subscription push do cliente autenticado. O cliente só pode remover suas próprias subscriptions.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID da subscription push"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Inscrição removida com sucesso (sem corpo)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Inscrição não pertence a este cliente"
+          },
+          "404": {
+            "description": "Inscrição não encontrada"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "CreateSubscriptionInput": {
+        "type": "object",
+        "required": ["endpoint", "keys"],
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL do endpoint push gerada pelo browser"
+          },
+          "keys": {
+            "type": "object",
+            "required": ["p256dh", "auth"],
+            "properties": {
+              "p256dh": {
+                "type": "string",
+                "description": "Chave pública de criptografia (base64)"
+              },
+              "auth": {
+                "type": "string",
+                "description": "Chave de autenticação (base64)"
+              }
+            }
+          },
+          "deviceInfo": {
+            "type": "string",
+            "description": "Informação do dispositivo/navegador (user-agent)"
+          }
+        }
+      },
+      "SubscriptionResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "customerId": { "type": "string" },
+          "endpoint": { "type": "string" },
+          "deviceInfo": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "responses": {
+      "ValidationError": {
+        "description": "Dados inválidos",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string" },
+                "code": { "type": "string" },
+                "details": { "type": "object" }
+              }
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Token inválido ou ausente",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string" },
+                "code": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

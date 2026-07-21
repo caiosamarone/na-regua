@@ -10,7 +10,7 @@ import { authenticate, requireRole } from "../../shared/hooks/auth.hook";
 
 export async function bookingRoutes(app: FastifyInstance) {
   const getSlotsController = new GetSlotsController();
-  const createAppointmentController = new CreateAppointmentController();
+  const createAppointmentController = new CreateAppointmentController(app.scheduler);
   const listCustomerAppointmentsController = new ListCustomerAppointmentsController();
   const getAppointmentDetailController = new GetAppointmentDetailController();
   const cancelAppointmentController = new CancelAppointmentController();

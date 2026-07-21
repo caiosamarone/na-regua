@@ -218,4 +218,14 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
         t.endDate >= startDate,
     );
   }
+
+  async updateNotifiedAt(id: string): Promise<void> {
+    const idx = this.appointments.findIndex((a) => a.id === id);
+    if (idx === -1) throw new Error("Appointment not found");
+    this.appointments[idx] = {
+      ...this.appointments[idx],
+      notifiedAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
 }

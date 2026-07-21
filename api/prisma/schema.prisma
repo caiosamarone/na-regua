@@ -102,10 +102,22 @@ model Customer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  refreshTokens RefreshToken[]
-  appointments  Appointment[]
-  magicLinks    MagicLinkToken[]
-  otpTokens     OtpToken[]
+  refreshTokens     RefreshToken[]
+  appointments      Appointment[]
+  magicLinks        MagicLinkToken[]
+  otpTokens         OtpToken[]
+  pushSubscriptions PushSubscription[]
+}
+
+model PushSubscription {
+  id         String   @id @default(cuid())
+  customerId String
+  endpoint   String   @unique
+  keys       Json
+  deviceInfo String?
+  createdAt  DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 }
 
 model RefreshToken {
@@ -191,6 +203,7 @@ model Appointment {
   cancelledByRole    CancelledByRole?
   cancellationReason String?
   cancelledAt        DateTime?
+  notifiedAt         DateTime?
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
 

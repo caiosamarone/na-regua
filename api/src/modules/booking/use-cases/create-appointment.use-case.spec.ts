@@ -2,6 +2,8 @@
 
 import { InMemoryAppointmentRepository } from "../../../tests/helpers/in-memory-appointment.repository";
 import { CreateAppointmentUseCase } from "./create-appointment.use-case";
+import type { NotificationJobScheduler } from "../../notifications/jobs/notification-job-scheduler";
+import { addMinutes } from "date-fns";
 
 describe("CreateAppointmentUseCase", () => {
   let repository: InMemoryAppointmentRepository;
@@ -219,5 +221,30 @@ describe("CreateAppointmentUseCase", () => {
         startTime: "2026-07-06T14:15:00.000Z",
       }),
     ).rejects.toThrow("Horário não respeita o intervalo de agendamento");
+  });
+
+  it("should schedule a push reminder when scheduler is provided", async () => {
+    jest.useFakeTimers().setSystemTime(new Date("2026-07-06T12:00:00.000Z"));
+
+    const mockScheduler: jest.Mocked<NotificationJobScheduler> = {
+      scheduleReminder: jest.fn(),
+    };
+    useCase = new CreateAppointmentUseCase(repository, mockScheduler);
+
+    const result = await useCase.execute({
+      barbershopId: shopId,
+      customerId,
+      barberId,
+      serviceId,
+      startTime: "2026-07-06T14:00:00.000Z",
+    });
+
+    expect(mockScheduler.scheduleReminder).toHaveBeenCalledTimes(1);
+    expect(mockScheduler.scheduleReminder).toHaveBeenCalledWith(
+      result.id,
+      addMinutes(new Date("2026-07-06T12:00:00.000Z"), 1),
+    );
+
+    jest.useRealTimers();
   });
 });

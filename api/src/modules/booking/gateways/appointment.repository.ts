@@ -57,4 +57,5 @@ export interface AppointmentRepository {
   findOperatingHours(barbershopId: string, dayOfWeek: number): Promise<OperatingHour[]>;
   findBlockedDates(barbershopId: string, date: Date): Promise<BlockedDate[]>;
   findTimeOffInRange(staffMemberId: string, startDate: Date, endDate: Date): Promise<TimeOff[]>;
+  updateNotifiedAt(id: string): Promise<void>;
 }

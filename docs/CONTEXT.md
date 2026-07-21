@@ -62,6 +62,16 @@
 | **Service Snapshot** | Price, duration, and name captured on the appointment at booking time. Preserves historical accuracy when services change. |
 | **Timezone** | IANA timezone identifier for a barbershop (e.g. `America/Sao_Paulo`). Determines how local wall-clock times map to absolute instants. |
 
+## Notifications
+
+| Term | Definition |
+|------|------------|
+| **Push Notification** | A notification delivered to an end customer's device via the Web Push API, even when the webapp is closed. Used for appointment reminders. |
+| **Push Subscription** | A browser-generated subscription object (endpoint + encryption keys) stored per customer as a separate `PushSubscription` model. A customer may have multiple subscriptions (one per browser/device). Expired subscriptions (HTTP 410) are removed automatically on send failure. Used to send push notifications via the Web Push API. |
+| **Push Reminder Job** | A scheduled job created at booking confirmation time that fires 1 hour before the appointment to send a push reminder. Managed via PgBoss on PostgreSQL. |
+| **Notification Channel** | An abstraction over a delivery method (push, WhatsApp, etc.) implementing `{ send(recipient, payload): Result }`. Channels are registered in the notifications module and invoked by jobs without knowing the underlying transport. |
+| **Notifications Module** | `src/modules/notifications/` — contains channel interface and implementations, PgBoss job handlers, and REST endpoints for push subscription management. Future channels (WhatsApp) are added as new channel files without changing existing code. |
+
 ## Tech Stack
 
 | Term | Definition |
@@ -71,3 +81,4 @@
 | **Deploy API** | Render |
 | **Deploy WebApp** | Vercel |
 | **Database** | PostgreSQL via Neon (free tier for MVP) |
+| **Job Queue** | PgBoss — job queue running on the existing PostgreSQL database. Used for scheduling push reminder jobs and other deferred work. |

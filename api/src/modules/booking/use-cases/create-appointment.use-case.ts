@@ -1,7 +1,8 @@
 import { AppointmentRepository } from "../gateways/appointment.repository";
 import { AppointmentConflictError, InvalidSlotError, BarbershopNotActiveError } from "../errors/booking-errors";
-import { addMinutes } from "date-fns";
+import { addMinutes, subHours } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
+import type { NotificationJobScheduler } from "../../notifications/jobs/notification-job-scheduler";
 
 function toMinutes(time: string): number {
   const [h, m] = time.split(":").map(Number);
@@ -9,7 +10,10 @@ function toMinutes(time: string): number {
 }
 
 export class CreateAppointmentUseCase {
-  constructor(private appointmentRepository: AppointmentRepository) {}
+  constructor(
+    private appointmentRepository: AppointmentRepository,
+    private scheduler?: NotificationJobScheduler,
+  ) {}
 
   async execute(data: {
     barbershopId: string;
@@ -64,7 +68,7 @@ export class CreateAppointmentUseCase {
 
     if (conflict.length > 0) throw new AppointmentConflictError();
 
-    return this.appointmentRepository.create({
+    const appointment = await this.appointmentRepository.create({
       barbershopId: data.barbershopId,
       customerId: data.customerId,
       barberId: data.barberId,
@@ -75,5 +79,12 @@ export class CreateAppointmentUseCase {
       startTime,
       endTime,
     });
+
+    if (this.scheduler) {
+      const reminderAt = addMinutes(new Date(), 1);
+      await this.scheduler.scheduleReminder(appointment.id, reminderAt);
+    }
+
+    return appointment;
   }
 }

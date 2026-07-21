@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teste de Push Notification — Na Régua</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; padding: 24px; color: #222; }
+.container { max-width: 640px; margin: 0 auto; }
+.card { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+h1 { font-size: 20px; margin-bottom: 16px; }
+h2 { font-size: 16px; margin-bottom: 8px; }
+label { display: block; font-size: 13px; font-weight: 600; margin-top: 12px; margin-bottom: 4px; }
+input, select { width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+button { margin-top: 16px; width: 100%; padding: 10px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; background: #2563eb; color: #fff; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+button.danger { background: #dc2626; }
+pre { background: #f0f0f0; padding: 12px; border-radius: 6px; font-size: 12px; overflow-x: auto; white-space: pre-wrap; }
+.log { margin-top: 8px; padding: 8px; border-radius: 6px; font-size: 13px; }
+.log.info { background: #dbeafe; color: #1e40af; }
+.log.success { background: #d1fae5; color: #065f46; }
+.log.error { background: #fee2e2; color: #991b1b; }
+.log.warn { background: #fef3c7; color: #92400e; }
+.step { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.step .num { width: 24px; height: 24px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.step .num.done { background: #22c55e; color: #fff; }
+.switch-group { display: flex; gap: 8px; margin-top: 12px; }
+.switch-group button { flex: 1; margin-top: 0; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #eee; }
+td button { margin: 0; padding: 4px 8px; font-size: 12px; width: auto; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <h1>🔔 Teste de Push Notification — Na Régua</h1>
+    <p id="permMsg" style="font-size:13px;margin-bottom:12px">Permissão: <span id="permStatus">verificando...</span></p>
+
+    <label>URL da API</label>
+    <input id="apiUrl" value="http://localhost:3333">
+
+    <label>Token JWT (Bearer)</label>
+    <input id="jwtToken" placeholder="cole seu token JWT aqui" style="font-family:monospace;font-size:13px">
+
+    <button onclick="fetchVapidKey()">1. Buscar chave VAPID pública</button>
+    <div id="vapidStatus"></div>
+
+    <button disabled id="swBtn" onclick="registerSw()">2. Registrar Service Worker</button>
+    <div id="swStatus"></div>
+
+    <button disabled id="subBtn" onclick="subscribeAndSend()">3. Inscrever e enviar p/ API</button>
+    <div id="subStatus"></div>
+  </div>
+
+  <div class="card">
+    <h2>Inscrições ativas</h2>
+    <div id="subscriptions">Nenhuma inscrição registrada.</div>
+  </div>
+
+  <div class="card">
+    <h2>Logs</h2>
+    <pre id="log"></pre>
+  </div>
+</div>
+
+<script>
+const LOG = document.getElementById("log");
+const API_URL = document.getElementById("apiUrl");
+const JWT = document.getElementById("jwtToken");
+const VAPID_STATUS = document.getElementById("vapidStatus");
+const SW_BTN = document.getElementById("swBtn");
+const SW_STATUS = document.getElementById("swStatus");
+const SUB_BTN = document.getElementById("subBtn");
+const SUB_STATUS = document.getElementById("subStatus");
+const SUBS_DIV = document.getElementById("subscriptions");
+
+let vapidKey = null;
+let swRegistration = null;
+const PERM_STATUS = document.getElementById("permStatus");
+
+function updatePermStatus() {
+  if (!("Notification" in window)) {
+    PERM_STATUS.textContent = "não suportado";
+    return;
+  }
+  PERM_STATUS.textContent = Notification.permission === "granted" ? "✅ permitida" :
+    Notification.permission === "denied" ? "❌ bloqueada" : "⏳ não solicitada";
+}
+updatePermStatus();
+
+function requestPermission() {
+  Notification.requestPermission().then(updatePermStatus);
+}
+
+function log(msg, type = "info") {
+  LOG.textContent += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+  const div = document.createElement("div");
+  div.className = `log ${type}`;
+  div.textContent = msg;
+  document.querySelector(".card:last-child").insertBefore(div, LOG);
+}
+
+function api() {
+  const base = API_URL.value.replace(/\/+$/, "");
+  const token = JWT.value.trim();
+  return {
+    base,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  };
+}
+
+async function fetchVapidKey() {
+  VAPID_STATUS.innerHTML = "";
+  try {
+    const { base, headers } = api();
+    const res = await fetch(`${base}/vapid-public-key`, { headers });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    vapidKey = data.publicKey;
+    VAPID_STATUS.innerHTML = '<div class="log success">OK — chave VAPID obtida</div>';
+    log("Chave VAPID obtida com sucesso", "success");
+    SW_BTN.disabled = false;
+  } catch (e) {
+    VAPID_STATUS.innerHTML = `<div class="log error">Erro: ${e.message}</div>`;
+    log(`Erro ao buscar VAPID key: ${e.message}`, "error");
+  }
+}
+
+async function registerSw() {
+  if (!("serviceWorker" in navigator)) {
+    SW_STATUS.innerHTML = '<div class="log error">Service Worker não suportado neste navegador.</div>';
+    log("Service Worker não suportado", "error");
+    return;
+  }
+  if (!("PushManager" in window)) {
+    SW_STATUS.innerHTML = '<div class="log error">Push API não suportada neste navegador.</div>';
+    log("Push API não suportada", "error");
+    return;
+  }
+  SW_STATUS.innerHTML = "";
+  try {
+    const swUrl = new URL("sw.js", window.location.href).href;
+    swRegistration = await navigator.serviceWorker.register(swUrl);
+    SW_STATUS.innerHTML = '<div class="log success">Service Worker registrado!</div>';
+    log("Service Worker registrado", "success");
+    SUB_BTN.disabled = false;
+  } catch (e) {
+    SW_STATUS.innerHTML = `<div class="log error">Erro: ${e.message}</div>`;
+    log(`Erro ao registrar SW: ${e.message}`, "error");
+  }
+}
+
+async function subscribeAndSend() {
+  if (!swRegistration) {
+    SUB_STATUS.innerHTML = '<div class="log error">Registre o Service Worker primeiro.</div>';
+    return;
+  }
+  if (!vapidKey) {
+    SUB_STATUS.innerHTML = '<div class="log error">Busque a chave VAPID primeiro.</div>';
+    return;
+  }
+  SUB_STATUS.innerHTML = "";
+  try {
+    const subscription = await swRegistration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: vapidKey,
+    });
+    log("Push subscription criada no browser", "success");
+
+    const subJson = subscription.toJSON();
+    const { base, headers } = api();
+    const res = await fetch(`${base}/push/subscriptions`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(subJson),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error ?? `HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    SUB_STATUS.innerHTML = `<div class="log success">Inscrição salva! ID: ${data.data.id}</div>`;
+    log(`Inscrição criada: ${data.data.id}`, "success");
+    listSubscriptions();
+  } catch (e) {
+    SUB_STATUS.innerHTML = `<div class="log error">Erro: ${e.message}</div>`;
+    log(`Erro na inscrição: ${e.message}`, "error");
+  }
+}
+
+async function deleteSubscription(id) {
+  if (!confirm(`Excluir inscrição ${id}?`)) return;
+  try {
+    const { base, headers } = api();
+    const res = await fetch(`${base}/push/subscriptions/${id}`, {
+      method: "DELETE",
+      headers,
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    log(`Inscrição ${id} excluída`, "success");
+    listSubscriptions();
+  } catch (e) {
+    log(`Erro ao excluir: ${e.message}`, "error");
+  }
+}
+
+async function listSubscriptions() {
+  try {
+    const { base, headers } = api();
+    const res = await fetch(`${base}/push/subscriptions`, { headers });
+    if (!res.ok) {
+      SUBS_DIV.textContent = "Não foi possível listar (endpoint GET pode não existir).";
+      return;
+    }
+    const data = await res.json();
+    SUBS_DIV.innerHTML = data.data?.length
+      ? `<table><tr><th>ID</th><th>Dispositivo</th><th>Criado</th><th></th></tr>${data.data.map(s => `<tr><td style="font-family:monospace;font-size:11px">${s.id}</td><td>${s.deviceInfo ?? "-"}</td><td>${new Date(s.createdAt).toLocaleString()}</td><td><button class="danger" onclick="deleteSubscription('${s.id}')">✕</button></td></tr>`).join("")}</table>`
+      : "Nenhuma inscrição registrada.";
+  } catch {
+    SUBS_DIV.textContent = "Listagem não disponível (GET subscriptions não implementado na API).";
+  }
+}
+
+log("Pronto. Siga os passos 1 → 2 → 3.");
+</script>
+</body>
+</html>
