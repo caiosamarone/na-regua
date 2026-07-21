@@ -1,36 +1,71 @@
-self.addEventListener("push", (event) => {
-  console.log("[SW] Push received");
+self.addEventListener("install", (event) => {
+  self.skipWaiting();
+  console.log("[sw] install");
+});
 
-  let data;
-  try {
-    data = event.data?.json();
-  } catch (e) {
-    console.log("[SW] JSON parse error:", e.message);
-    data = null;
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+  console.log("[sw] activate");
+});
+
+async function notifyClients(payload) {
+  const clientList = await clients.matchAll({ type: "window", includeUncontrolled: true });
+  for (const client of clientList) {
+    client.postMessage({ type: "PUSH_RECEIVED", ...payload });
   }
+}
 
-  const title = data?.title ?? "Na Régua (teste)";
-  const body = data?.body ?? "Você tem um agendamento!";
+self.addEventListener("push", (event) => {
+  console.log("[sw] push received", event);
 
-  const options = {
-    body,
-    tag: data?.tag ?? "na-regua",
-    data: { url: data?.url },
+  let data = {
+    title: "Na Régua",
+    body: "Você tem um agendamento!",
   };
 
+  if (event.data) {
+    try {
+      data = { ...data, ...event.data.json() };
+    } catch {
+      data.body = event.data.text();
+    }
+  }
+
   event.waitUntil(
-    self.registration.showNotification(title, options)
-      .then(() => console.log("[SW] Notification shown"))
-      .catch((err) => console.log("[SW] Notification error:", err))
+    (async () => {
+      await notifyClients({
+        title: data.title,
+        body: data.body,
+        permission: Notification.permission,
+      });
+
+      if (Notification.permission !== "granted") {
+        console.error(
+          "[sw] Notification.permission =",
+          Notification.permission,
+          "— conceda permissão na página.",
+        );
+        return;
+      }
+
+      await self.registration.showNotification(data.title, {
+        body: data.body,
+        icon: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f514.png",
+        data,
+      });
+      console.log("[sw] showNotification chamado — banner deve aparecer no SO");
+    })(),
   );
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = event.notification.data?.url ?? "/";
-  event.waitUntil(clients.openWindow(url));
-});
-
-self.addEventListener("activate", () => {
-  console.log("[SW] Activated");
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ("focus" in client) return client.focus();
+      }
+      if (clients.openWindow) return clients.openWindow("./");
+    }),
+  );
 });
