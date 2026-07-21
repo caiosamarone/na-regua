@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "types": ["node"]
+    "types": ["node", "web-push"]
   },
   "exclude": ["tests/**/*", "jest.config.ts", "**/*.spec.ts", "**/*.test.ts"]
 }
