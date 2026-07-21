@@ -20,13 +20,41 @@ export async function authRoutes(app: FastifyInstance) {
   const resetPasswordController = new ResetPasswordController();
   const acceptInviteController = new AcceptInviteController();
 
-  app.post("/auth/login", controller.handle.bind(controller));
-  app.post("/auth/google", googleController.handle.bind(googleController));
-  app.post("/auth/logout", logoutController.handle.bind(logoutController));
-  app.post("/auth/magic-link", magicLinkController.handle.bind(magicLinkController));
-  app.post("/auth/magic-link/verify", verifyMagicLinkController.handle.bind(verifyMagicLinkController));
-  app.post("/auth/refresh", refreshController.handle.bind(refreshController));
-  app.post("/auth/forgot-password", forgotPasswordController.handle.bind(forgotPasswordController));
-  app.post("/auth/reset-password", resetPasswordController.handle.bind(resetPasswordController));
-  app.post("/auth/accept-invite", acceptInviteController.handle.bind(acceptInviteController));
+  app.post("/auth/login", {
+    config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
+  }, controller.handle.bind(controller));
+  app.post("/auth/google", {
+    config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
+  }, googleController.handle.bind(googleController));
+  app.post("/auth/logout", {
+    config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
+  }, logoutController.handle.bind(logoutController));
+  app.post("/auth/magic-link", {
+    config: {
+      rateLimit: {
+        max: 3, timeWindow: "1 hour",
+        keyGenerator: (req) => (req.body as { email?: string })?.email ?? req.ip,
+      },
+    },
+  }, magicLinkController.handle.bind(magicLinkController));
+  app.post("/auth/magic-link/verify", {
+    config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
+  }, verifyMagicLinkController.handle.bind(verifyMagicLinkController));
+  app.post("/auth/refresh", {
+    config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
+  }, refreshController.handle.bind(refreshController));
+  app.post("/auth/forgot-password", {
+    config: {
+      rateLimit: {
+        max: 3, timeWindow: "1 hour",
+        keyGenerator: (req) => (req.body as { email?: string })?.email ?? req.ip,
+      },
+    },
+  }, forgotPasswordController.handle.bind(forgotPasswordController));
+  app.post("/auth/reset-password", {
+    config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
+  }, resetPasswordController.handle.bind(resetPasswordController));
+  app.post("/auth/accept-invite", {
+    config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
+  }, acceptInviteController.handle.bind(acceptInviteController));
 }

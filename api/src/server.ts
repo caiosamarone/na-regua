@@ -72,6 +72,15 @@ async function start() {
       });
     }
 
+    if (typeof (error as Record<string, unknown>).statusCode === "number") {
+      const err = error as Error & { statusCode: number };
+      return reply.status(err.statusCode).send({
+        error: err.message,
+        code: "ERROR",
+        details: {},
+      });
+    }
+
     request.log.error(error);
     return reply.status(500).send({
       error: "Internal server error",

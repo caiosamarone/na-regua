@@ -23,6 +23,13 @@ export async function bookingRoutes(app: FastifyInstance) {
   // Customer routes
   app.post("/appointments", {
     preHandler: [authenticate, requireRole("CUSTOMER")],
+    config: {
+      rateLimit: {
+        max: 20,
+        timeWindow: "1 minute",
+        keyGenerator: (req) => (req.user as { sub: string }).sub,
+      },
+    },
   }, createAppointmentController.handle.bind(createAppointmentController) as any);
 
   app.get("/customers/me/appointments", {
