@@ -15,10 +15,11 @@ export class GetBarbershopProfileUseCase {
       throw new BarbershopNotFoundError();
     }
 
-    const [operatingHours, services, staff] = await Promise.all([
+    const [operatingHours, services, staff, gallery] = await Promise.all([
       this.barbershopRepository.findOperatingHours(barbershop.id),
       this.barbershopRepository.findServices(barbershop.id),
       this.barbershopRepository.findBookableStaff(barbershop.id),
+      this.barbershopRepository.findGallery(barbershop.id),
     ]);
 
     return {
@@ -26,6 +27,7 @@ export class GetBarbershopProfileUseCase {
       operatingHours,
       services,
       staff,
+      gallery,
     };
   }
 }

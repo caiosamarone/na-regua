@@ -4,7 +4,7 @@ import type {
   CreateCommissionEntryInput,
   BarberCommissionSummary,
 } from "./commission.repository";
-import type { CommissionEntry, CommissionPayment } from "../../../generated/prisma/client";
+import type { CommissionEntry, CommissionPayment, CommissionStatus, StaffRole } from "../../../generated/prisma/client";
 
 export class PrismaCommissionRepository implements CommissionRepository {
   async findByAppointmentId(appointmentId: string) {
@@ -22,28 +22,28 @@ export class PrismaCommissionRepository implements CommissionRepository {
     from?: Date,
     to?: Date,
     barberId?: string,
-    status?: string,
+    status?: CommissionStatus,
     page = 1,
     pageSize = 20,
   ) {
-    const whereFilter: any = { barbershopId };
-    if (barberId) whereFilter.staffMemberId = barberId;
-    if (status) whereFilter.status = status;
-    if (from) whereFilter.createdAt = { ...whereFilter.createdAt, gte: from };
-    if (to) whereFilter.createdAt = { ...whereFilter.createdAt, lte: to };
+    const whereStaff = {
+      barbershopId,
+      role: { in: ["BARBER", "BARBERSHOP_ADMIN"] as StaffRole[] },
+      isActive: true,
+      ...(barberId ? { id: barberId } : {}),
+    };
+
+    const total = await prisma.staffMember.count({ where: whereStaff });
 
     const staff = await prisma.staffMember.findMany({
-      where: {
-        barbershopId,
-        role: { in: ["BARBER", "BARBERSHOP_ADMIN"] },
-        isActive: true,
-        ...(barberId ? { id: barberId } : {}),
-      },
+      where: whereStaff,
       select: {
         id: true,
         name: true,
         commissionPercent: true,
       },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     });
 
     const now = new Date();
@@ -76,7 +76,7 @@ export class PrismaCommissionRepository implements CommissionRepository {
       });
     }
 
-    return { barbers, total: barbers.length };
+    return { barbers, total };
   }
 
   async findBarberEntries(
@@ -84,7 +84,7 @@ export class PrismaCommissionRepository implements CommissionRepository {
     barbershopId: string,
     from?: Date,
     to?: Date,
-    status?: string,
+    status?: CommissionStatus,
   ) {
     const where: any = { staffMemberId, barbershopId };
     if (status) where.status = status;

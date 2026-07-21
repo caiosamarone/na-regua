@@ -2,6 +2,7 @@ import type {
   Appointment,
   Barbershop,
   BlockedDate,
+  GalleryImage,
   InvitationRole,
   OperatingHour,
   Service,
@@ -15,7 +16,13 @@ import type {
   UpdateBarbershopProfileInput,
 } from "../../modules/barbershops/gateways/barbershop.repository";
 
-type StoredBarbershop = Omit<Barbershop, "staffMembers" | "services" | "operatingHours" | "blockedDates" | "appointments" | "invitationTokens">;
+type StoredBarbershop = Omit<Barbershop, "staffMembers" | "services" | "operatingHours" | "blockedDates" | "appointments" | "invitationTokens" | "commissionEntries" | "commissionPayments" | "gallery" | "primaryColor" | "secondaryColor" | "instagramUrl" | "whatsappUrl" | "facebookUrl"> & {
+  primaryColor?: string | null;
+  secondaryColor?: string | null;
+  instagramUrl?: string | null;
+  whatsappUrl?: string | null;
+  facebookUrl?: string | null;
+};
 type StoredOperatingHour = Omit<OperatingHour, "barbershop">;
 type StoredService = Omit<Service, "barbershop" | "appointments">;
 type StoredStaff = Pick<StaffMember, "id" | "barbershopId" | "name" | "role" | "isBookable" | "isActive" | "avatarUrl">;
@@ -52,6 +59,7 @@ export class InMemoryBarbershopRepository implements BarbershopRepository {
     consumedAt: Date | null;
     createdAt: Date;
   }> = [];
+  gallery: GalleryImage[] = [];
 
   reset() {
     this.barbershops = [];
@@ -61,6 +69,7 @@ export class InMemoryBarbershopRepository implements BarbershopRepository {
     this.blockedDates = [];
     this.appointments = [];
     this.invitationTokens = [];
+    this.gallery = [];
   }
 
   private toBarbershop(b: StoredBarbershop): Barbershop {
@@ -278,5 +287,39 @@ export class InMemoryBarbershopRepository implements BarbershopRepository {
       consumedAt: null,
       createdAt: new Date(),
     });
+  }
+
+  async findGallery(barbershopId: string) {
+    return this.gallery
+      .filter((g) => g.barbershopId === barbershopId)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+  }
+
+  async findGalleryImageById(id: string) {
+    return this.gallery.find((g) => g.id === id) ?? null;
+  }
+
+  async addGalleryImage(barbershopId: string, imageUrl: string, caption: string | null, sortOrder: number) {
+    const img: GalleryImage = {
+      id: `gallery-${this.gallery.length + 1}`,
+      barbershopId,
+      imageUrl,
+      caption,
+      sortOrder,
+      createdAt: new Date(),
+    };
+    this.gallery.push(img);
+    return img;
+  }
+
+  async reorderGallery(imageIds: string[]) {
+    for (let i = 0; i < imageIds.length; i++) {
+      const img = this.gallery.find((g) => g.id === imageIds[i]);
+      if (img) img.sortOrder = i;
+    }
+  }
+
+  async deleteGalleryImage(id: string) {
+    this.gallery = this.gallery.filter((g) => g.id !== id);
   }
 }

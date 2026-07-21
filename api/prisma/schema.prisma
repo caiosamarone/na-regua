@@ -38,8 +38,14 @@ model Barbershop {
   blockedDates       BlockedDate[]
   appointments       Appointment[]
   invitationTokens   InvitationToken[]
-  commissionEntries  CommissionEntry[]
-  commissionPayments CommissionPayment[]
+  commissionEntries        CommissionEntry[]
+  commissionPayments       CommissionPayment[]
+  primaryColor             String?
+  secondaryColor           String?
+  instagramUrl             String?
+  whatsappUrl              String?
+  facebookUrl              String?
+  gallery                  GalleryImage[]
 }
 
 model OperatingHour {
@@ -230,6 +236,17 @@ model CommissionPayment {
 enum CommissionStatus {
   PENDING
   PAID
+}
+
+model GalleryImage {
+  id           String   @id @default(cuid())
+  barbershopId String
+  imageUrl     String
+  caption      String?
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  barbershop Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
 }
 
 enum StaffRole {

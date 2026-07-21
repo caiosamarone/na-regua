@@ -1,9 +1,16 @@
 {
-  "openapi": "3.0.3",
+  "openapi": "3.1.0",
   "info": {
-    "title": "Na Régua — Barbershops (Fase 2)",
+    "title": "barbershops",
+    "description": "Endpoints de barbearias (Fase 2). Inclui customização (cores, redes sociais) e galeria de imagens. Use <<SERVER_URL>> como variável de ambiente no Hoppscotch.",
     "version": "1.0.0"
   },
+  "servers": [
+    {
+      "url": "<<SERVER_URL>>",
+      "description": "Base URL configurada no Hoppscotch"
+    }
+  ],
   "paths": {
     "/barbershops/search": {
       "get": {
@@ -164,7 +171,12 @@
                   "state": { "type": "string" },
                   "timezone": { "type": "string" },
                   "latitude": { "type": "number" },
-                  "longitude": { "type": "number" }
+                  "longitude": { "type": "number" },
+                  "primaryColor": { "type": "string", "description": "Cor primária (hex: #RRGGBB)" },
+                  "secondaryColor": { "type": "string", "description": "Cor secundária (hex: #RRGGBB)" },
+                  "instagramUrl": { "type": "string", "format": "uri" },
+                  "whatsappUrl": { "type": "string", "format": "uri" },
+                  "facebookUrl": { "type": "string", "format": "uri" }
                 }
               }
             }
@@ -264,6 +276,96 @@
           "200": { "description": "Data bloqueada removida" }
         }
       }
+    },
+    "/barbershops/{id}/gallery": {
+      "post": {
+        "summary": "Adicionar imagem na galeria (BARBERSHOP_ADMIN)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "imageUrl": { "type": "string", "format": "uri" },
+                  "caption": { "type": "string", "maxLength": 200 },
+                  "sortOrder": { "type": "integer", "default": 0 }
+                },
+                "required": ["imageUrl"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Imagem adicionada" }
+        }
+      }
+    },
+    "/barbershops/{id}/gallery/reorder": {
+      "put": {
+        "summary": "Reordenar galeria (BARBERSHOP_ADMIN)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "imageIds": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                },
+                "required": ["imageIds"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Galeria reordenada" }
+        }
+      }
+    },
+    "/barbershops/{id}/gallery/{imageId}": {
+      "delete": {
+        "summary": "Remover imagem da galeria (BARBERSHOP_ADMIN)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "imageId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Imagem removida" }
+        }
+      }
     }
   },
   "components": {
@@ -271,6 +373,38 @@
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "ProfileResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "slug": { "type": "string" },
+              "primaryColor": { "type": "string", "nullable": true },
+              "secondaryColor": { "type": "string", "nullable": true },
+              "instagramUrl": { "type": "string", "nullable": true },
+              "whatsappUrl": { "type": "string", "nullable": true },
+              "facebookUrl": { "type": "string", "nullable": true },
+              "gallery": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "imageUrl": { "type": "string" },
+                    "caption": { "type": "string", "nullable": true },
+                    "sortOrder": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
   }

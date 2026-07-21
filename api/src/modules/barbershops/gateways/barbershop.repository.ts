@@ -3,6 +3,7 @@ import type {
   Barbershop,
   BlockedDate,
   Customer,
+  GalleryImage,
   InvitationRole,
   OperatingHour,
   Service,
@@ -17,6 +18,7 @@ export type BarbershopNearbyItem = Pick<
 export type BarbershopProfile = Barbershop & {
   operatingHours: OperatingHour[];
   services: Service[];
+  gallery: GalleryImage[];
 };
 
 export type OperatingHourInput = {
@@ -55,6 +57,11 @@ export type UpdateBarbershopProfileInput = {
   longitude?: number | null;
   timezone?: string;
   phone?: string | null;
+  primaryColor?: string | null;
+  secondaryColor?: string | null;
+  instagramUrl?: string | null;
+  whatsappUrl?: string | null;
+  facebookUrl?: string | null;
 };
 
 export interface BarbershopRepository {
@@ -75,4 +82,9 @@ export interface BarbershopRepository {
   findBlockedDateById(id: string): Promise<BlockedDate | null>;
   deleteBlockedDate(id: string): Promise<void>;
   createInvitationToken(email: string, barbershopId: string, role: InvitationRole, tokenHash: string, expiresAt: Date): Promise<void>;
+  findGallery(barbershopId: string): Promise<GalleryImage[]>;
+  findGalleryImageById(id: string): Promise<GalleryImage | null>;
+  addGalleryImage(barbershopId: string, imageUrl: string, caption: string | null, sortOrder: number): Promise<GalleryImage>;
+  reorderGallery(imageIds: string[]): Promise<void>;
+  deleteGalleryImage(id: string): Promise<void>;
 }

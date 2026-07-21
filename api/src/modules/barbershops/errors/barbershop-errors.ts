@@ -3,6 +3,7 @@ import { AppError } from "../../../shared/errors/app-error";
 export class BarbershopNotFoundError extends AppError {
   constructor(message = "Barbearia não encontrada") {
     super(404, "BARBERSHOP_NOT_FOUND", message);
+    Object.setPrototypeOf(this, BarbershopNotFoundError.prototype);
   }
 }
 
@@ -33,5 +34,12 @@ export class BlockedDatesInPastError extends AppError {
 export class BlockedDateNotFoundError extends AppError {
   constructor(message = "Data bloqueada não encontrada") {
     super(404, "BLOCKED_DATE_NOT_FOUND", message);
+  }
+}
+
+export class GalleryImageNotFoundError extends AppError {
+  constructor(message = "Imagem da galeria não encontrada") {
+    super(404, "GALLERY_IMAGE_NOT_FOUND", message);
+    Object.setPrototypeOf(this, GalleryImageNotFoundError.prototype);
   }
 }

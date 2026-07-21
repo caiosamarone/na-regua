@@ -211,4 +211,36 @@ export class PrismaBarbershopRepository implements BarbershopRepository {
       data: { email, barbershopId, role, tokenHash, expiresAt },
     });
   }
+
+  async findGallery(barbershopId: string) {
+    return prisma.galleryImage.findMany({
+      where: { barbershopId },
+      orderBy: { sortOrder: "asc" },
+    });
+  }
+
+  async findGalleryImageById(id: string) {
+    return prisma.galleryImage.findUnique({ where: { id } });
+  }
+
+  async addGalleryImage(barbershopId: string, imageUrl: string, caption: string | null, sortOrder: number) {
+    return prisma.galleryImage.create({
+      data: { barbershopId, imageUrl, caption, sortOrder },
+    });
+  }
+
+  async reorderGallery(imageIds: string[]) {
+    await prisma.$transaction(
+      imageIds.map((id, index) =>
+        prisma.galleryImage.update({
+          where: { id },
+          data: { sortOrder: index },
+        }),
+      ),
+    );
+  }
+
+  async deleteGalleryImage(id: string) {
+    await prisma.galleryImage.delete({ where: { id } });
+  }
 }

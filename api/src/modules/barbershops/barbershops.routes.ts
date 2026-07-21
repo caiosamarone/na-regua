@@ -8,6 +8,10 @@ import { UpdateBarbershopProfileController } from "./controllers/update-barbersh
 import { ReplaceOperatingHoursController } from "./controllers/replace-operating-hours.controller";
 import { BlockedDatesController } from "./controllers/blocked-dates.controller";
 import { DeleteBlockedDateController } from "./controllers/delete-blocked-date.controller";
+import { GetGalleryController } from "./controllers/get-gallery.controller";
+import { AddGalleryImageController } from "./controllers/add-gallery-image.controller";
+import { ReorderGalleryController } from "./controllers/reorder-gallery.controller";
+import { DeleteGalleryImageController } from "./controllers/delete-gallery-image.controller";
 import { authenticate, requireRole } from "../../shared/hooks/auth.hook";
 
 export async function barbershopRoutes(app: FastifyInstance) {
@@ -20,6 +24,10 @@ export async function barbershopRoutes(app: FastifyInstance) {
   const replaceHoursController = new ReplaceOperatingHoursController();
   const blockedDatesController = new BlockedDatesController();
   const deleteBlockedController = new DeleteBlockedDateController();
+  const getGalleryController = new GetGalleryController();
+  const addGalleryController = new AddGalleryImageController();
+  const reorderGalleryController = new ReorderGalleryController();
+  const deleteGalleryController = new DeleteGalleryImageController();
 
   // Public routes
   app.get("/barbershops/search", searchController.handle.bind(searchController));
@@ -50,4 +58,21 @@ export async function barbershopRoutes(app: FastifyInstance) {
   app.delete("/barbershops/:id/blocked-dates/:blockedDateId", {
     preHandler: [authenticate, requireRole("BARBERSHOP_ADMIN")],
   }, deleteBlockedController.handle.bind(deleteBlockedController) as any);
+
+  // Gallery routes
+  app.get("/barbershops/:id/gallery", {
+    preHandler: [authenticate, requireRole("BARBERSHOP_ADMIN")],
+  }, getGalleryController.handle.bind(getGalleryController) as any);
+
+  app.post("/barbershops/:id/gallery", {
+    preHandler: [authenticate, requireRole("BARBERSHOP_ADMIN")],
+  }, addGalleryController.handle.bind(addGalleryController) as any);
+
+  app.put("/barbershops/:id/gallery/reorder", {
+    preHandler: [authenticate, requireRole("BARBERSHOP_ADMIN")],
+  }, reorderGalleryController.handle.bind(reorderGalleryController) as any);
+
+  app.delete("/barbershops/:id/gallery/:imageId", {
+    preHandler: [authenticate, requireRole("BARBERSHOP_ADMIN")],
+  }, deleteGalleryController.handle.bind(deleteGalleryController) as any);
 }

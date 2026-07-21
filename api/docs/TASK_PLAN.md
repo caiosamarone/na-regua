@@ -200,23 +200,23 @@ _Pré-requisito: Fase 0 + Fase 1._
 
 ### 2.7 Customização da Página da Barbearia
 
-- [ ] **2.7a** — Adicionar campos `primaryColor`, `secondaryColor`, `instagramUrl`, `whatsappUrl`, `facebookUrl` ao modelo `Barbershop` no schema Prisma + migration
-- [ ] **2.7b** — Criar modelo `GalleryImage` no schema Prisma + migration
-- [ ] **2.7c** — Atualizar schema Zod em `barbershop.schema.ts` com novos campos de customização
-- [ ] **2.7d** — Criar `src/modules/barbershops/models/gallery.schema.ts` (Zod para galeria)
-- [ ] **2.7e** — Atualizar `barbershop.repository.ts` com métodos de galeria (CRUD)
-- [ ] **2.7f** — Atualizar `prisma-barbershop.repository.ts` com implementação da galeria
-- [ ] **2.7g** — Atualizar `update-barbershop-profile.use-case.ts` para aceitar cores e redes sociais
-- [ ] **2.7h** — Criar `add-gallery-image.use-case.ts` + controller + spec
-- [ ] **2.7i** — Criar `reorder-gallery.use-case.ts` + controller + spec
-- [ ] **2.7j** — Criar `delete-gallery-image.use-case.ts` + controller + spec
-- [ ] **2.7k** — Atualizar `get-barbershop-profile.use-case.ts` para incluir galeria na resposta pública
-- [ ] **2.7l** — Atualizar `barbershops.routes.ts` com rotas da galeria
+- [x] **2.7a** — Adicionar campos `primaryColor`, `secondaryColor`, `instagramUrl`, `whatsappUrl`, `facebookUrl` ao modelo `Barbershop` no schema Prisma + migration
+- [x] **2.7b** — Criar modelo `GalleryImage` no schema Prisma + migration
+- [x] **2.7c** — Atualizar schema Zod em `barbershop.schema.ts` com novos campos de customização
+- [x] **2.7d** — Criar `src/modules/barbershops/models/gallery.schema.ts` (Zod para galeria)
+- [x] **2.7e** — Atualizar `barbershop.repository.ts` com métodos de galeria (CRUD)
+- [x] **2.7f** — Atualizar `prisma-barbershop.repository.ts` com implementação da galeria
+- [x] **2.7g** — Atualizar `update-barbershop-profile.use-case.ts` para aceitar cores e redes sociais
+- [x] **2.7h** — Criar `add-gallery-image.use-case.ts` + controller + spec
+- [x] **2.7i** — Criar `reorder-gallery.use-case.ts` + controller + spec
+- [x] **2.7j** — Criar `delete-gallery-image.use-case.ts` + controller + spec
+- [x] **2.7k** — Atualizar `get-barbershop-profile.use-case.ts` para incluir galeria na resposta pública
+- [x] **2.7l** — Atualizar `barbershops.routes.ts` com rotas da galeria
 
 ### 2.8 Upload — Galeria
 
-- [ ] **2.8a** — Criar `upload-gallery-image.use-case.ts` (reusa validação do módulo upload) + controller + spec
-- [ ] **2.8b** — Registrar rota `POST /upload/gallery-image` em `upload.routes.ts`
+- [x] **2.8a** — Criar `upload-gallery-image.use-case.ts` (reusa validação do módulo upload) + controller
+- [x] **2.8b** — Registrar rota `POST /upload/gallery-image` em `upload.routes.ts`
 
 ---
 

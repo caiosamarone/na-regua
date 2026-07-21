@@ -55,6 +55,14 @@ export const bookableStaffItemSchema = z.object({
   avatarUrl: z.string().nullable(),
 });
 
+export const galleryItemSchema = z.object({
+  id: z.string(),
+  imageUrl: z.string(),
+  caption: z.string().nullable(),
+  sortOrder: z.number(),
+  createdAt: z.date().transform((d) => d.toISOString()),
+});
+
 export const barbershopProfileSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -72,9 +80,15 @@ export const barbershopProfileSchema = z.object({
   slotIntervalMinutes: z.number(),
   cancellationLeadTimeMinutes: z.number(),
   active: z.boolean(),
+  primaryColor: z.string().nullable(),
+  secondaryColor: z.string().nullable(),
+  instagramUrl: z.string().nullable(),
+  whatsappUrl: z.string().nullable(),
+  facebookUrl: z.string().nullable(),
   operatingHours: z.array(operatingHourSchema),
   services: z.array(serviceItemSchema),
   staff: z.array(bookableStaffItemSchema),
+  gallery: z.array(galleryItemSchema),
 });
 
 export const barbershopListResponseSchema = z.object({
@@ -119,6 +133,11 @@ export const updateBarbershopProfileInputSchema = z.object({
   longitude: z.number().min(-180).max(180).optional().nullable(),
   timezone: z.string().min(1).optional(),
   phone: z.string().optional().nullable(),
+  primaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Formato hex esperado (#RRGGBB)").optional().nullable(),
+  secondaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Formato hex esperado (#RRGGBB)").optional().nullable(),
+  instagramUrl: z.string().url().optional().nullable(),
+  whatsappUrl: z.string().url().optional().nullable(),
+  facebookUrl: z.string().url().optional().nullable(),
 });
 
 export const replaceOperatingHoursInputSchema = z
