@@ -8,7 +8,8 @@
     "scheme": "naregua",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.naregua.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -17,7 +18,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.naregua.app"
     },
     "web": {
       "output": "static",
@@ -37,6 +39,19 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "42d70d80-ffc0-4250-8cc2-c35155492b32"
+      }
+    },
+    "owner": "caiosamarone",
+    "updates": {
+      "url": "https://u.expo.dev/42d70d80-ffc0-4250-8cc2-c35155492b32"
     }
   }
 }

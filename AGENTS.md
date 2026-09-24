@@ -16,6 +16,7 @@ The webapp and the mobile app are both **clients of the same API**. Business rul
 na-regua/
 ├── AGENTS.md                   # This file — project conventions for AI
 ├── CLAUDE.md                   # Claude Code entry point (imports this file)
+├── .github/workflows/          # CI/CD (mobile-ci, mobile-cd-development, mobile-cd-production)
 ├── docs/
 │   ├── PRD.md                  # Product requirements
 │   ├── CONTEXT.md              # Domain glossary
@@ -44,7 +45,7 @@ na-regua/
 │   └── package.json
 └── mobile/                     # React Native app (Expo SDK 57)
     ├── AGENTS.md / CLAUDE.md   # Expo-specific agent rules (from the template)
-    ├── docs/adr/               # Mobile-specific ADRs (create as decisions are made)
+    ├── docs/adr/               # Mobile-specific ADRs (001 build & release)
     ├── src/
     │   ├── app/                # Expo Router file-based routes (only screens/layouts)
     │   ├── components/         # UI + domain components
@@ -53,7 +54,9 @@ na-regua/
     │   ├── hooks/              # Custom hooks (TanStack Query wrappers)
     │   └── types/              # Shared TypeScript types
     ├── assets/                 # Icons, splash, images
+    ├── scripts/eas-deploy.mjs  # CD: new EAS build vs OTA update (fingerprint)
     ├── app.json                # Expo config
+    ├── eas.json                # EAS build profiles (development, preview, production)
     └── package.json
 ```
 
@@ -68,6 +71,7 @@ na-regua/
 | `api/docs/adr/005-error-handling.md` | `{ data }` / `{ error, code, details }` format |
 | `api/docs/adr/010-time-and-timezone.md` | Times are rendered in the barbershop's timezone |
 | `api/docs/adr/018-push-notifications.md` | Web Push only today — mobile needs a native channel |
+| `mobile/docs/adr/001-build-and-release.md` | EAS profiles, fingerprint build-vs-OTA, CI/CD triggers |
 | `webapp/docs/adr/001-auth-integration.md` | NextAuth handles Google → API JWT is the auth token |
 | `webapp/docs/adr/003-component-architecture.md` | Directory conventions, TanStack + RHF + Zod |
 
@@ -102,6 +106,9 @@ na-regua/
 - API base URL from `EXPO_PUBLIC_API_URL` (on a physical device/emulator, use the machine's LAN IP, not `localhost`)
 - Dates/times: format in the barbershop's timezone (ADR 010), never the device timezone
 - User-facing copy in Portuguese (pt-BR)
+- Tests: Jest (`jest-expo`) + React Native Testing Library, in `__tests__/` folders outside `src/app/`; import `describe`/`it`/`expect` from `@jest/globals`
+- Before finishing: `npm run lint`, `npm run typecheck`, `npm run test` (same checks as CI)
+- Release: merge to `main` → development build or OTA; tag `mobile-vX.Y.Z` → production build or OTA (ADR 001). Anything that changes native code triggers a new build
 
 ### Database (Prisma)
 - Default IDs: CUID
@@ -116,7 +123,7 @@ The mobile app changes some earlier decisions. Update these docs as work progres
 - `docs/PRD.md` and `docs/adr/002-mvp-scope.md` list "Mobile app" as out of scope / "web only" — revise them
 - `api/docs/adr/018-push-notifications.md` covers Web Push only. Native push (Expo Push / FCM / APNs) needs a new ADR and a new channel in the `notifications` module
 - CORS (ADR 003) does not apply to native requests, but rate limits and auth rules do
-- Create `mobile/docs/adr/` for mobile-specific decisions (auth integration, navigation, push, release/EAS builds)
+- Add mobile ADRs for auth integration, navigation and push as those decisions are made
 
 ## Running Locally
 
@@ -136,13 +143,14 @@ npm run dev             # http://localhost:3000
 # Mobile
 cd mobile
 cp .env.example .env    # set EXPO_PUBLIC_API_URL=http://<LAN-IP>:3333
-npx expo start          # scan QR with Expo Go / run on emulator
+npx expo start          # opens in the development build (expo-dev-client)
+npx expo start --go     # or use Expo Go instead
 ```
 
 ## Links
 
 - **API ADRs**: `api/docs/adr/` (001 to 018)
 - **WebApp ADRs**: `webapp/docs/adr/` (001 to 004)
-- **Mobile ADRs**: `mobile/docs/adr/` (to be created)
+- **Mobile ADRs**: `mobile/docs/adr/` (001)
 - **PRD**: `docs/PRD.md`
 - **Glossary**: `docs/CONTEXT.md`
