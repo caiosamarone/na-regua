@@ -48,6 +48,8 @@ We use our own script instead of `expo/expo-github-action/continuous-deploy-fing
 - Platforms per environment come from repository variables `EAS_PLATFORMS_DEVELOPMENT` / `EAS_PLATFORMS_PRODUCTION` (default `android`; set to `android,ios` once Apple credentials exist)
 - Builds are not submitted to the stores automatically yet (`eas submit` stays manual)
 
+Step-by-step usage (pt-BR): [`../release-guide.md`](../release-guide.md).
+
 ## Setup (one-time)
 
 1. `cd mobile && npx eas-cli@latest login`

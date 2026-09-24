@@ -45,7 +45,9 @@ na-regua/
 │   └── package.json
 └── mobile/                     # React Native app (Expo SDK 57)
     ├── AGENTS.md / CLAUDE.md   # Expo-specific agent rules (from the template)
-    ├── docs/adr/               # Mobile-specific ADRs (001 build & release)
+    ├── docs/
+    │   ├── adr/                # Mobile-specific ADRs (001 build & release)
+    │   └── release-guide.md    # Practical release guide (pt-BR): EAS, pipeline, stores
     ├── src/
     │   ├── app/                # Expo Router file-based routes (only screens/layouts)
     │   ├── components/         # UI + domain components
@@ -152,5 +154,6 @@ npx expo start --go     # or use Expo Go instead
 - **API ADRs**: `api/docs/adr/` (001 to 018)
 - **WebApp ADRs**: `webapp/docs/adr/` (001 to 004)
 - **Mobile ADRs**: `mobile/docs/adr/` (001)
+- **Mobile release guide**: `mobile/docs/release-guide.md`
 - **PRD**: `docs/PRD.md`
 - **Glossary**: `docs/CONTEXT.md`
