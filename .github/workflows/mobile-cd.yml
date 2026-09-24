@@ -1,0 +1,30 @@
+name: Mobile CD
+
+# CI → development → production (production waits for approval in the "production" GitHub environment).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-*.yml'
+  workflow_dispatch:
+
+jobs:
+  ci:
+    uses: ./.github/workflows/mobile-ci.yml
+
+  development:
+    needs: ci
+    uses: ./.github/workflows/mobile-eas-deploy.yml
+    with:
+      profile: development
+      platforms: ${{ vars.EAS_PLATFORMS_DEVELOPMENT || 'android' }}
+    secrets: inherit
+
+  production:
+    needs: development
+    uses: ./.github/workflows/mobile-eas-deploy.yml
+    with:
+      profile: production
+      platforms: ${{ vars.EAS_PLATFORMS_PRODUCTION || 'android' }}
+    secrets: inherit

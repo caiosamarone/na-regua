@@ -1,0 +1,45 @@
+name: Mobile EAS deploy
+
+# Reusable deploy job: per platform, publishes an OTA update or starts a new EAS build,
+# depending on whether the native fingerprint changed (see mobile/scripts/eas-deploy.mjs).
+on:
+  workflow_call:
+    inputs:
+      profile:
+        description: EAS build profile (also used as the GitHub environment name)
+        required: true
+        type: string
+      platforms:
+        description: Comma-separated platforms, e.g. "android,ios"
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    name: EAS deploy (${{ inputs.profile }})
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.profile }}
+    concurrency:
+      group: mobile-deploy-${{ inputs.profile }}
+      cancel-in-progress: false
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - run: npm ci
+
+      - uses: expo/expo-github-action@v9
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build or OTA update
+        run: node scripts/eas-deploy.mjs --profile ${{ inputs.profile }} --platforms "${{ inputs.platforms }}"

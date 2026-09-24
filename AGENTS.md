@@ -16,7 +16,7 @@ The webapp and the mobile app are both **clients of the same API**. Business rul
 na-regua/
 ├── AGENTS.md                   # This file — project conventions for AI
 ├── CLAUDE.md                   # Claude Code entry point (imports this file)
-├── .github/workflows/          # CI/CD (mobile-ci, mobile-cd-development, mobile-cd-production)
+├── .github/workflows/          # CI/CD (mobile-ci, mobile-cd, mobile-eas-deploy)
 ├── docs/
 │   ├── PRD.md                  # Product requirements
 │   ├── CONTEXT.md              # Domain glossary
@@ -108,7 +108,7 @@ na-regua/
 - User-facing copy in Portuguese (pt-BR)
 - Tests: Jest (`jest-expo`) + React Native Testing Library, in `__tests__/` folders outside `src/app/`; import `describe`/`it`/`expect` from `@jest/globals`
 - Before finishing: `npm run lint`, `npm run typecheck`, `npm run test` (same checks as CI)
-- Release: merge to `main` → development build or OTA; tag `mobile-vX.Y.Z` → production build or OTA (ADR 001). Anything that changes native code triggers a new build
+- Release: merge to `main` → CI → development (build or OTA) → production (build or OTA, after manual approval) (ADR 001). Anything that changes native code triggers a new build
 
 ### Database (Prisma)
 - Default IDs: CUID

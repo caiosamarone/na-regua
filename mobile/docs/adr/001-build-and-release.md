@@ -37,12 +37,14 @@ We use our own script instead of `expo/expo-github-action/continuous-deploy-fing
 
 | Workflow | Trigger | What it does |
 |----------|---------|--------------|
-| `mobile-ci.yml` | PR touching `mobile/**`; called by the CD workflows | `npm ci`, lint, typecheck, Jest |
-| `mobile-cd-development.yml` | Push to `main` touching `mobile/**`, or manual | CI → deploy with `development` profile |
-| `mobile-cd-production.yml` | Tag `mobile-v*` (e.g. `mobile-v1.0.0`), or manual | CI → deploy with `production` profile |
+| `mobile-ci.yml` | PR touching `mobile/**`; called by `mobile-cd.yml` | `npm ci`, lint, typecheck, Jest |
+| `mobile-cd.yml` | Push to `main` touching `mobile/**`, or manual | `ci` → `development` → `production` |
+| `mobile-eas-deploy.yml` | Called by `mobile-cd.yml` | Reusable deploy job for one profile (runs `eas-deploy.mjs`) |
 
-- Production is released by pushing a tag, not by every merge — `main` feeds development continuously and production ships when a version is cut
-- Each CD job runs in a GitHub environment (`development` / `production`); add required reviewers to `production` for a manual approval gate
+- One pipeline per merge: CI, then the `development` deploy, then the `production` deploy
+- Each deploy job runs in the GitHub environment named after the profile. `production` has required reviewers, so the production deploy **waits for manual approval** in the run page; unapproved runs expire after 30 days
+- Deploys use per-profile concurrency groups, so a pending production approval never blocks development deploys; a newer pending production deploy replaces an older one
+- We chose this over tag-triggered releases for simplicity (single developer, frequent OTA releases). If versioned tags become useful, create them automatically when production starts a new build
 - Platforms per environment come from repository variables `EAS_PLATFORMS_DEVELOPMENT` / `EAS_PLATFORMS_PRODUCTION` (default `android`; set to `android,ios` once Apple credentials exist)
 - Builds are not submitted to the stores automatically yet (`eas submit` stays manual)
 

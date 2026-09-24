@@ -86,6 +86,8 @@ function eas(commandArgs) {
   const stdout = execFileSync('eas', [...commandArgs, '--json', '--non-interactive'], {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'inherit'],
+    // fingerprint:generate prints every hashed source, which easily exceeds the 1 MB default
+    maxBuffer: 512 * 1024 * 1024,
   });
   return JSON.parse(stdout);
 }
