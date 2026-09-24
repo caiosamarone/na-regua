@@ -2,37 +2,58 @@
 
 ## Overview
 
-Multi-tenant SaaS platform connecting barbershops with customers. Monorepo with `api/` (Fastify + Prisma + PostgreSQL) and `webapp/` (Next.js + ShadCN + TanStack Query).
+Multi-tenant SaaS platform connecting barbershops with customers. Monorepo with three apps that share one backend:
+
+- `api/` — Fastify + Prisma + PostgreSQL (single source of truth for all clients)
+- `webapp/` — Next.js + ShadCN + TanStack Query
+- `mobile/` — React Native (Expo) + TanStack Query *(new — being bootstrapped)*
+
+The webapp and the mobile app are both **clients of the same API**. Business rules (slot calculation, tenant isolation, cancellation policy, etc.) live in the API only — never reimplement them in a client.
 
 ## Directory Structure
 
 ```
 na-regua/
 ├── AGENTS.md                   # This file — project conventions for AI
+├── CLAUDE.md                   # Claude Code entry point (imports this file)
 ├── docs/
 │   ├── PRD.md                  # Product requirements
 │   ├── CONTEXT.md              # Domain glossary
+│   ├── first-deploy.md         # First deploy walkthrough
 │   └── adr/                    # Project-level ADRs
 │       ├── 001-project-overview.md
-│       ├── 005-mvp-scope.md
-│       └── 006-deployment.md
+│       ├── 002-mvp-scope.md
+│       └── 003-deployment.md
 ├── api/
-│   ├── docs/adr/               # API-specific ADRs (001-009)
+│   ├── docs/adr/               # API-specific ADRs (001-018)
 │   ├── prisma/schema.prisma    # Database schema
 │   ├── src/
 │   │   ├── server.ts           # Fastify entry point
 │   │   ├── config/             # Env, Prisma client
-│   │   ├── modules/            # Feature modules (auth, appointments, etc.)
+│   │   ├── modules/            # Feature modules (auth, booking, notifications, etc.)
 │   │   └── shared/             # Errors, utils, tenant context
 │   └── package.json
-└── webapp/
-    ├── docs/adr/               # WebApp-specific ADRs (001-004)
+├── webapp/
+│   ├── docs/adr/               # WebApp-specific ADRs (001-004)
+│   ├── src/
+│   │   ├── app/                # Next.js App Router
+│   │   ├── components/         # UI, layout, forms, domain
+│   │   ├── lib/                # Utils, API client
+│   │   ├── hooks/              # Custom hooks
+│   │   └── types/              # Shared TypeScript types
+│   └── package.json
+└── mobile/                     # React Native app (Expo SDK 57)
+    ├── AGENTS.md / CLAUDE.md   # Expo-specific agent rules (from the template)
+    ├── docs/adr/               # Mobile-specific ADRs (create as decisions are made)
     ├── src/
-    │   ├── app/                # Next.js App Router
-    │   ├── components/         # UI, layout, forms, domain
-    │   ├── lib/                # Utils, API client
-    │   ├── hooks/              # Custom hooks
+    │   ├── app/                # Expo Router file-based routes (only screens/layouts)
+    │   ├── components/         # UI + domain components
+    │   ├── constants/          # Theme and constants
+    │   ├── lib/                # API client, auth/token storage, utils
+    │   ├── hooks/              # Custom hooks (TanStack Query wrappers)
     │   └── types/              # Shared TypeScript types
+    ├── assets/                 # Icons, splash, images
+    ├── app.json                # Expo config
     └── package.json
 ```
 
@@ -45,6 +66,8 @@ na-regua/
 | `api/docs/adr/004-appointment-scheduling.md` | Slot calc in memory, no PENDING status |
 | `api/docs/adr/003-security.md` | Rate limits, password policy, CORS rules |
 | `api/docs/adr/005-error-handling.md` | `{ data }` / `{ error, code, details }` format |
+| `api/docs/adr/010-time-and-timezone.md` | Times are rendered in the barbershop's timezone |
+| `api/docs/adr/018-push-notifications.md` | Web Push only today — mobile needs a native channel |
 | `webapp/docs/adr/001-auth-integration.md` | NextAuth handles Google → API JWT is the auth token |
 | `webapp/docs/adr/003-component-architecture.md` | Directory conventions, TanStack + RHF + Zod |
 
@@ -56,6 +79,7 @@ na-regua/
 - Zod schemas for all input validation
 - Tenant-scoped queries must use `getBarbershopId(request)`
 - Route files: `src/modules/{feature}/{feature}.routes.ts`
+- Endpoints must stay client-agnostic — do not add web-only assumptions (cookies, redirects to web URLs) that break the mobile app
 
 ### WebApp
 - Pages under `src/app/(route-group)/page.tsx`
@@ -64,11 +88,35 @@ na-regua/
 - Forms: RHF + Zod + `@hookform/resolvers`
 - Server state: TanStack Query (useQuery/useMutation)
 
+### Mobile (React Native)
+- **Expo** (managed workflow, SDK 57) + **Expo Router** for navigation (`src/app/` directory, route groups like `(auth)`, `(customer)`, `(staff)`)
+- Also follow `mobile/AGENTS.md` (Expo rules: use `npx expo install` to add packages, check versioned Expo docs, never edit `ios/`/`android/` by hand)
+- Import alias: `@/*` → `src/*`
+- TypeScript strict mode
+- API calls via a single `api` client in `src/lib/api.ts`, mirroring the webapp client (same `{ data }` / `{ error, code, details }` handling)
+- Server state: TanStack Query — same query keys and hook shapes as the webapp where possible
+- Forms: RHF + Zod + `@hookform/resolvers`
+- **Auth**: no NextAuth on mobile. Use native Google Sign-In to get a Google ID token and send it to `POST /auth/google`; staff use `POST /auth/login`. The API's JWT/refresh tokens are the session (ADR 002)
+- **Token storage**: `expo-secure-store` for access + refresh tokens — never AsyncStorage for secrets
+- Refresh on 401 via `POST /auth/refresh` with rotation; on refresh failure, clear tokens and send the user to login
+- API base URL from `EXPO_PUBLIC_API_URL` (on a physical device/emulator, use the machine's LAN IP, not `localhost`)
+- Dates/times: format in the barbershop's timezone (ADR 010), never the device timezone
+- User-facing copy in Portuguese (pt-BR)
+
 ### Database (Prisma)
 - Default IDs: CUID
 - Tenant filter always applied in WHERE
 - Appointment statuses: BOOKED, CANCELLED, DONE
 - Timestamps: `createdAt` + `updatedAt` on all tables
+
+## Mobile — Open Points
+
+The mobile app changes some earlier decisions. Update these docs as work progresses:
+
+- `docs/PRD.md` and `docs/adr/002-mvp-scope.md` list "Mobile app" as out of scope / "web only" — revise them
+- `api/docs/adr/018-push-notifications.md` covers Web Push only. Native push (Expo Push / FCM / APNs) needs a new ADR and a new channel in the `notifications` module
+- CORS (ADR 003) does not apply to native requests, but rate limits and auth rules do
+- Create `mobile/docs/adr/` for mobile-specific decisions (auth integration, navigation, push, release/EAS builds)
 
 ## Running Locally
 
@@ -84,11 +132,17 @@ npm run dev             # http://localhost:3333
 cd webapp
 cp .env.example .env.local
 npm run dev             # http://localhost:3000
+
+# Mobile
+cd mobile
+cp .env.example .env    # set EXPO_PUBLIC_API_URL=http://<LAN-IP>:3333
+npx expo start          # scan QR with Expo Go / run on emulator
 ```
 
 ## Links
 
-- **API ADRs**: `api/docs/adr/` (001 to 009)
+- **API ADRs**: `api/docs/adr/` (001 to 018)
 - **WebApp ADRs**: `webapp/docs/adr/` (001 to 004)
+- **Mobile ADRs**: `mobile/docs/adr/` (to be created)
 - **PRD**: `docs/PRD.md`
 - **Glossary**: `docs/CONTEXT.md`
