@@ -33,6 +33,8 @@ Guia prático de como uma mudança sai do código e chega ao celular dos usuári
 
 Variáveis `EXPO_PUBLIC_*` viram texto fixo dentro do bundle na hora da build/OTA — o app não lê variáveis em tempo de execução. Como a build roda nos servidores do EAS e a OTA roda no GitHub Actions, nenhum dos dois tem o seu `.env` local (que está no `.gitignore`). Por isso o valor fica nas **Environment variables** do expo.dev, uma por ambiente. Build e OTA leem o mesmo valor, o que evita uma OTA apontar para a API errada. É "Plain text" porque não é segredo: vai dentro do app.
 
+O login com Google usa mais três variáveis por ambiente no expo.dev: `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` e `GOOGLE_IOS_URL_SCHEME` (detalhes na [ADR 002](adr/002-auth-integration.md)). `GOOGLE_IOS_URL_SCHEME` entra na config nativa, então precisa ter o mesmo valor em todos os ambientes — senão o fingerprint da build e o da OTA ficam diferentes.
+
 ---
 
 ## 2. Profiles do EAS

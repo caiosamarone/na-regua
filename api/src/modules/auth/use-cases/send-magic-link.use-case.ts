@@ -9,9 +9,10 @@ export class SendMagicLinkUseCase {
     private authRepository: AuthRepository,
     private emailService: EmailService,
     private frontendUrl: string,
+    private mobileMagicLinkUrl: string,
   ) {}
 
-  async execute(email: string) {
+  async execute(email: string, client: "web" | "mobile" = "web") {
     let customer = await this.authRepository.findCustomerByEmail(email);
 
     if (!customer) {
@@ -28,7 +29,9 @@ export class SendMagicLinkUseCase {
       expiresAt,
     );
 
-    const link = `${this.frontendUrl}/auth/magic-link?token=${rawToken}`;
+    const baseUrl =
+      client === "mobile" ? this.mobileMagicLinkUrl : `${this.frontendUrl}/auth/magic-link`;
+    const link = `${baseUrl}?token=${rawToken}`;
 
     await this.emailService.sendMagicLink(customer.email, link);
   }

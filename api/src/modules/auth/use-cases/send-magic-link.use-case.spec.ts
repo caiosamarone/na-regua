@@ -18,7 +18,12 @@ describe("SendMagicLinkUseCase", () => {
       sendCancellationConfirmation: jest.fn(),
       sendBookingConfirmation: jest.fn(),
     } as unknown as jest.Mocked<EmailService>;
-    useCase = new SendMagicLinkUseCase(repository, emailService, "https://app.naregua.app");
+    useCase = new SendMagicLinkUseCase(
+      repository,
+      emailService,
+      "https://app.naregua.app",
+      "naregua://auth/magic-link",
+    );
   });
 
   afterEach(() => {
@@ -52,5 +57,23 @@ describe("SendMagicLinkUseCase", () => {
     expect(repository.magicLinkTokens).toHaveLength(1);
     expect(repository.customers).toHaveLength(1);
     expect(repository.customers[0].email).toBe("new@test.com");
+  });
+
+  it("should link to the webapp by default", async () => {
+    await useCase.execute("user@test.com");
+
+    expect(emailService.sendMagicLink).toHaveBeenCalledWith(
+      "user@test.com",
+      expect.stringMatching(/^https:\/\/app\.naregua\.app\/auth\/magic-link\?token=[0-9a-f]+$/),
+    );
+  });
+
+  it("should link to the mobile app when client is mobile", async () => {
+    await useCase.execute("user@test.com", "mobile");
+
+    expect(emailService.sendMagicLink).toHaveBeenCalledWith(
+      "user@test.com",
+      expect.stringMatching(/^naregua:\/\/auth\/magic-link\?token=[0-9a-f]+$/),
+    );
   });
 });

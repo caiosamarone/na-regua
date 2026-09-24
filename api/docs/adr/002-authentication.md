@@ -53,6 +53,7 @@ Three user personas: Super Admin, Staff (Barbershop Admin + Barber), and End Cus
 - Opaque random token stored with **hash** in `MagicLinkToken` table
 - 15-minute expiry, single-use (`consumedAt` set on first use)
 - Same storage pattern as OTP and refresh tokens
+- `POST /auth/magic-link` takes an optional `client` (`web` | `mobile`, default `web`). `web` links to `FRONTEND_URL/auth/magic-link?token=…`; `mobile` links to `MOBILE_MAGIC_LINK_URL?token=…` (default `naregua://auth/magic-link`) so the native app verifies the token itself (see `mobile/docs/adr/002-auth-integration.md`)
 
 
 ### Invite Flow (Barbershop Admin)

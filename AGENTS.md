@@ -46,7 +46,7 @@ na-regua/
 └── mobile/                     # React Native app (Expo SDK 57)
     ├── AGENTS.md / CLAUDE.md   # Expo-specific agent rules (from the template)
     ├── docs/
-    │   ├── adr/                # Mobile-specific ADRs (001 build & release)
+    │   ├── adr/                # Mobile-specific ADRs (001 build & release, 002 auth)
     │   └── release-guide.md    # Practical release guide (pt-BR): EAS, pipeline, stores
     ├── src/
     │   ├── app/                # Expo Router file-based routes (only screens/layouts)
@@ -57,7 +57,7 @@ na-regua/
     │   └── types/              # Shared TypeScript types
     ├── assets/                 # Icons, splash, images
     ├── scripts/eas-deploy.mjs  # CD: new EAS build vs OTA update (fingerprint)
-    ├── app.json                # Expo config
+    ├── app.json                # Expo config (app.config.ts adds env-dependent plugins)
     ├── eas.json                # EAS build profiles (development, preview, production)
     └── package.json
 ```
@@ -74,6 +74,7 @@ na-regua/
 | `api/docs/adr/010-time-and-timezone.md` | Times are rendered in the barbershop's timezone |
 | `api/docs/adr/018-push-notifications.md` | Web Push only today — mobile needs a native channel |
 | `mobile/docs/adr/001-build-and-release.md` | EAS profiles, fingerprint build-vs-OTA, CI/CD triggers |
+| `mobile/docs/adr/002-auth-integration.md` | Native Google Sign-In, magic link deep link, staff roles → tabs, token storage |
 | `webapp/docs/adr/001-auth-integration.md` | NextAuth handles Google → API JWT is the auth token |
 | `webapp/docs/adr/003-component-architecture.md` | Directory conventions, TanStack + RHF + Zod |
 
@@ -125,7 +126,7 @@ The mobile app changes some earlier decisions. Update these docs as work progres
 - `docs/PRD.md` and `docs/adr/002-mvp-scope.md` list "Mobile app" as out of scope / "web only" — revise them
 - `api/docs/adr/018-push-notifications.md` covers Web Push only. Native push (Expo Push / FCM / APNs) needs a new ADR and a new channel in the `notifications` module
 - CORS (ADR 003) does not apply to native requests, but rate limits and auth rules do
-- Add mobile ADRs for auth integration, navigation and push as those decisions are made
+- Add mobile ADRs for navigation and push as those decisions are made (auth: `mobile/docs/adr/002-auth-integration.md`)
 
 ## Running Locally
 
@@ -153,7 +154,7 @@ npx expo start --go     # or use Expo Go instead
 
 - **API ADRs**: `api/docs/adr/` (001 to 018)
 - **WebApp ADRs**: `webapp/docs/adr/` (001 to 004)
-- **Mobile ADRs**: `mobile/docs/adr/` (001)
+- **Mobile ADRs**: `mobile/docs/adr/` (001 to 002)
 - **Mobile release guide**: `mobile/docs/release-guide.md`
 - **PRD**: `docs/PRD.md`
 - **Glossary**: `docs/CONTEXT.md`

@@ -39,6 +39,8 @@ export const customerPayloadSchema = z.object({
 
 export const magicLinkRequestSchema = z.object({
   email: emailSchema,
+  // "mobile" makes the email link open the native app instead of the webapp
+  client: z.enum(["web", "mobile"]).optional().default("web"),
 });
 
 export const magicLinkVerifySchema = z.object({

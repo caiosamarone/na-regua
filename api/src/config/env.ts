@@ -18,6 +18,7 @@ const envSchema = z.object({
   VAPID_PRIVATE_KEY: z.string().min(1),
   VAPID_SUBJECT: z.string().min(1).default("mailto:contact@naregua.app"),
   FRONTEND_URL: z.string().url().default("http://localhost:3000"),
+  MOBILE_MAGIC_LINK_URL: z.string().url().default("naregua://auth/magic-link"),
 });
 
 export type Env = z.infer<typeof envSchema>;

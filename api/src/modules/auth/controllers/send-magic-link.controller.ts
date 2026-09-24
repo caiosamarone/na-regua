@@ -7,12 +7,17 @@ import { env } from "../../../config/env";
 
 const repository = new PrismaAuthRepository();
 const emailService = new EmailService();
-const useCase = new SendMagicLinkUseCase(repository, emailService, env.FRONTEND_URL);
+const useCase = new SendMagicLinkUseCase(
+  repository,
+  emailService,
+  env.FRONTEND_URL,
+  env.MOBILE_MAGIC_LINK_URL,
+);
 
 export class SendMagicLinkController {
   async handle(request: FastifyRequest, reply: FastifyReply) {
     const input = magicLinkRequestSchema.parse(request.body);
-    await useCase.execute(input.email);
+    await useCase.execute(input.email, input.client);
     return reply.code(200).send({ data: { message: "Email sent if account exists" } });
   }
 }
